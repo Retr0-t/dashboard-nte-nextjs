@@ -1,5 +1,4 @@
 // lib/supabase.ts
-// lib/supabase.ts
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -19,131 +18,307 @@ export const supabase = createClient(
   supabaseAnon
 )
 
-// ── Types ──────────────────────────────────────────────────────────────────
-export interface StokRow {
+/* ==========================================================
+   TYPES
+========================================================== */
+
+export interface MasterStockNTE {
   id?: number
-  tanggal: string
-  operator: string
-  area: string
-  area_key: string
-  warehouse: string
-  jenis_nte: string
-  type_nte: string
-  status_nte: string
-  closing_stock: number
+
+  reg: string
+  witel: string
+
+  wh_code: string
+  wh_so: string
+
+  status: string
+
+  jenis: string
+  jenis_2: string
+
+  merk: string
+  type: string
+
+  sn: string
+
+  status_scmt: string
+
+  tanggal_update?: string
+
+  owner?: string
+
   created_at?: string
   updated_at?: string
 }
 
 export interface PivotRow {
-  jenis_nte: string
-  type_nte: string
-  status_nte: string
+  jenis: string
+  jenis_2: string
+  status: string
+  type: string
+
   [warehouse: string]: string | number
+
   grand_total: number
 }
 
-// ── Queries ────────────────────────────────────────────────────────────────
+/* ==========================================================
+   MASTER DATA
+========================================================== */
 
-export async function getAvailableDates(): Promise<string[]> {
-  const { data } = await supabase
-    .from('stok_harian')
-    .select('tanggal')
-    .order('tanggal', { ascending: false })
-  const unique = [...new Set((data || []).map(r => r.tanggal))]
-  return unique
-}
-
-export async function getStok(params: {
-  tanggal: string
-  operator?: string
-  area?: string
-  area_key?: string
-}): Promise<StokRow[]> {
-  let q = supabase.from('stok_harian').select('*').eq('tanggal', params.tanggal)
-  if (params.operator) q = q.eq('operator', params.operator)
-  if (params.area)     q = q.eq('area', params.area)
-  if (params.area_key) q = q.eq('area_key', params.area_key)
-  const { data } = await q.order('jenis_nte').order('type_nte').order('status_nte')
-  return data || []
-}
-
-export async function getWHCoverage(tanggal: string) {
-  const { data } = await supabase
-    .from('stok_harian')
-    .select('operator, area, area_key, warehouse')
-    .eq('tanggal', tanggal)
-  // Deduplicate
-  const seen = new Set<string>()
-  return (data || []).filter(r => {
-    const k = `${r.operator}|${r.warehouse}`
-    if (seen.has(k)) return false
-    seen.add(k); return true
-  })
-}
-
-export async function upsertStok(rows: StokRow[]): Promise<{ count: number; error: string | null }> {
-  const { error, count } = await supabase
-    .from('stok_harian')
-    .upsert(rows, {
-      onConflict: 'tanggal,operator,warehouse,type_nte,status_nte',
-      ignoreDuplicates: false,
-    })
-    .select()
-  return { count: count || rows.length, error: error?.message || null }
-}
-
-export async function deleteStok(tanggal: string, operator: string, warehouse: string) {
-  await supabase
-    .from('stok_harian')
-    .delete()
-    .eq('tanggal', tanggal)
-    .eq('operator', operator)
-    .eq('warehouse', warehouse)
-}
-
-export async function getGrandTotal(tanggal: string) {
-  const { data } = await supabase
-    .from('stok_harian')
-    .select('operator,area,area_key,jenis_nte,type_nte,status_nte,closing_stock')
-    .eq('tanggal', tanggal)
-  return data || []
-}
-
-export async function getTrend(typeNte: string, statusNte: string, operator?: string) {
-  let q = supabase
-    .from('stok_harian')
-    .select('tanggal,operator,area,closing_stock')
-    .eq('type_nte', typeNte)
-    .eq('status_nte', statusNte)
-    .order('tanggal', { ascending: true })
-    .limit(180)
-  if (operator) q = q.eq('operator', operator)
-  const { data } = await q
-  // Group by tanggal+operator+area
-  const grouped: Record<string, { tanggal: string; operator: string; area: string; total: number }> = {}
-  for (const r of (data || [])) {
-    const k = `${r.tanggal}|${r.operator}|${r.area}`
-    if (!grouped[k]) grouped[k] = { tanggal: r.tanggal, operator: r.operator, area: r.area, total: 0 }
-    grouped[k].total += r.closing_stock
+export async function getMasterStockNTE(
+  filters?: {
+    reg?: string
+    witel?: string
+    wh_so?: string
+    owner?: string
+    status?: string
+    jenis?: string
+    jenis_2?: string
   }
-  return Object.values(grouped)
+): Promise<MasterStockNTE[]> {
+
+  let query = supabase
+    .from('master_stock_nte')
+    .select('*')
+
+  if (filters?.reg) {
+    query = query.eq('reg', filters.reg)
+  }
+
+  if (filters?.witel) {
+    query = query.eq('witel', filters.witel)
+  }
+
+  if (filters?.wh_so) {
+    query = query.eq('wh_so', filters.wh_so)
+  }
+
+  if (filters?.owner) {
+    query = query.eq('owner', filters.owner)
+  }
+
+  if (filters?.status) {
+    query = query.eq('status', filters.status)
+  }
+
+  if (filters?.jenis) {
+    query = query.eq('jenis', filters.jenis)
+  }
+
+  if (filters?.jenis_2) {
+    query = query.eq('jenis_2', filters.jenis_2)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error(error)
+    return []
+  }
+
+  return data || []
 }
 
-// ── Build pivot ────────────────────────────────────────────────────────────
-export function buildPivot(rows: StokRow[], warehouses: string[]): PivotRow[] {
-  const map: Record<string, PivotRow> = {}
-  for (const r of rows) {
-    const k = `${r.jenis_nte}||${r.type_nte}||${r.status_nte}`
-    if (!map[k]) {
-      map[k] = { jenis_nte: r.jenis_nte, type_nte: r.type_nte, status_nte: r.status_nte, grand_total: 0 }
-      for (const wh of warehouses) map[k][wh] = 0
+/* ==========================================================
+   WAREHOUSE LIST
+========================================================== */
+
+export async function getWarehouses(): Promise<string[]> {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('wh_so')
+
+  if (error) {
+    console.error(error)
+    return []
+  }
+
+  return [
+    ...new Set(
+      (data || [])
+        .map(r => r.wh_so)
+        .filter(Boolean)
+    )
+  ].sort()
+}
+
+/* ==========================================================
+   WITEL LIST
+========================================================== */
+
+export async function getWitels(): Promise<string[]> {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('witel')
+
+  if (error) {
+    console.error(error)
+    return []
+  }
+
+  return [
+    ...new Set(
+      (data || [])
+        .map(r => r.witel)
+        .filter(Boolean)
+    )
+  ].sort()
+}
+
+/* ==========================================================
+   JENIS LIST
+========================================================== */
+
+export async function getJenisList(): Promise<string[]> {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('jenis')
+
+  if (error) {
+    console.error(error)
+    return []
+  }
+
+  return [
+    ...new Set(
+      (data || [])
+        .map(r => r.jenis)
+        .filter(Boolean)
+    )
+  ].sort()
+}
+
+/* ==========================================================
+   DASHBOARD SUMMARY
+========================================================== */
+
+export async function getDashboardSummary() {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('*')
+
+  if (error) {
+    console.error(error)
+
+    return {
+      totalSN: 0,
+      totalType: 0,
+      totalWarehouse: 0
     }
-    map[k][r.warehouse] = (map[k][r.warehouse] as number || 0) + r.closing_stock
   }
-  // Recalc grand total
-  for (const row of Object.values(map)) {
-    row.grand_total = warehouses.reduce((s, wh) => s + (row[wh] as number || 0), 0)
+
+  const rows = data || []
+
+  return {
+
+    totalSN: rows.length,
+
+    totalType: new Set(
+      rows.map(r => r.type)
+    ).size,
+
+    totalWarehouse: new Set(
+      rows.map(r => r.wh_so)
+    ).size
   }
-  return Object.values(map).filter(r => r.grand_total > 0)
+}
+
+/* ==========================================================
+   PIVOT BUILDER
+========================================================== */
+
+export function buildPivot(
+  rows: MasterStockNTE[],
+  warehouses: string[]
+): PivotRow[] {
+
+  const map: Record<string, PivotRow> = {}
+
+  rows.forEach((r) => {
+
+    const key =
+      `${r.jenis}|${r.jenis_2}|${r.status}|${r.type}`
+
+    if (!map[key]) {
+
+      map[key] = {
+
+        jenis: r.jenis,
+
+        jenis_2: r.jenis_2,
+
+        status: r.status,
+
+        type: r.type,
+
+        grand_total: 0
+      }
+
+      warehouses.forEach(wh => {
+        map[key][wh] = 0
+      })
+    }
+
+    map[key][r.wh_so] =
+      ((map[key][r.wh_so] as number) || 0) + 1
+  })
+
+  Object.values(map).forEach(row => {
+
+    row.grand_total =
+      warehouses.reduce(
+        (sum, wh) =>
+          sum + Number(row[wh] || 0),
+        0
+      )
+  })
+
+  return Object.values(map)
+    .sort((a, b) =>
+      String(a.jenis_2).localeCompare(
+        String(b.jenis_2)
+      )
+    )
+}
+
+/* ==========================================================
+   GRAND TOTAL PER WAREHOUSE
+========================================================== */
+
+export function buildWarehouseTotals(
+  rows: MasterStockNTE[],
+  warehouses: string[]
+) {
+
+  const totals: Record<string, number> = {}
+
+  warehouses.forEach(wh => {
+    totals[wh] = 0
+  })
+
+  rows.forEach(row => {
+
+    if (!totals[row.wh_so]) {
+      totals[row.wh_so] = 0
+    }
+
+    totals[row.wh_so]++
+  })
+
+  return totals
+}
+
+/* ==========================================================
+   GRAND TOTAL
+========================================================== */
+
+export function getGrandTotal(
+  rows: MasterStockNTE[]
+) {
+  return rows.length
 }
