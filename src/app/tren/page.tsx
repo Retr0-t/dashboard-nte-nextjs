@@ -12,7 +12,7 @@ export default function TrenPage() {
   const [dates, setDates]         = useState<string[]>([])
   const [latest, setLatest]       = useState('')
   const [selType, setSelType]     = useState('')
-  const [selStatus, setSelStatus] = useState(NTE_STATUS[0])
+  const [selStatus, setSelStatus] = useState<string>(NTE_STATUS[0])
   const [selOp, setSelOp]         = useState('Semua')
   const [trendData, setTrendData] = useState<any[]>([])
   const [pieData, setPieData]     = useState<any[]>([])

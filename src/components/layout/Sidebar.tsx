@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, TableProperties, PenSquare, Upload,
   BarChart3, RefreshCw, TrendingUp, Download,
-  Database, Bot, ChevronRight
+  Database, Bot, ChevronRight, Sheet
 } from 'lucide-react'
 
 const NAV = [

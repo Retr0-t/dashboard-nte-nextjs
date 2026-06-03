@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    serverComponentsExternalPackages: ['jspdf', 'html2canvas'],
-  },
+  // jspdf & html2canvas hanya dipakai di browser via dynamic import
+  // tidak perlu serverComponentsExternalPackages
 }
 module.exports = nextConfig

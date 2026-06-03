@@ -28,7 +28,7 @@ export default function RekapPage() {
     const res: Record<string, any[]> = {}
     const keys = scope === 'Semua'
       ? Object.keys(AREA_CONFIG)
-      : ALL_OPERATORS.includes(scope as any)
+      : ALL_OPERATORS.includes(scope)
         ? Object.keys(AREA_CONFIG).filter(k => AREA_CONFIG[k].operator === scope)
         : [scope]
 

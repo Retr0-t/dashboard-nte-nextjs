@@ -12,7 +12,7 @@ type CellKey = string  // `${typeNte}||${status}||${warehouse}`
 export default function InputPage() {
   const today = new Date().toISOString().split('T')[0]
   const [selDate, setSelDate]     = useState(today)
-  const [selOp, setSelOp]         = useState<typeof ALL_OPERATORS[number]>(ALL_OPERATORS[0])
+  const [selOp, setSelOp]         = useState<string>(ALL_OPERATORS[0])
   const [selKey, setSelKey]       = useState('')
   const [cells, setCells]         = useState<Record<CellKey, number>>({})
   const [saving, setSaving]       = useState(false)

@@ -10,7 +10,7 @@ export const AREA_CONFIG: Record<string, {
     operator: "TELKOMSEL", area: "BANDUNG",
     warehouses: [
       "TA SO INV AHMAD YANI WH", "TA SO INV BANDUNG CENTRUM WH",
-      "TA SO INV CIANJUR WH", "TA SO INV CIJAURA WH", "TA SO INV CIMAHI WH",
+      "TA SO INV CIANJUR WH", "TA SO INV CUAURA WH", "TA SO INV CIMAHI WH",
       "TA SO INV GEGERKALONG WH", "TA SO INV KOPO WH", "TA SO INV LEMBANG WH",
       "TA SO INV PADALARANG WH", "TA SO INV RAJAWALI WH",
       "TA SO INV SINDANGLAYA WH", "TA SO INV UJUNG BERUNG WH",
@@ -19,8 +19,8 @@ export const AREA_CONFIG: Record<string, {
   "TELKOMSEL - SOREANG": {
     operator: "TELKOMSEL", area: "SOREANG",
     warehouses: [
-      "TA SO INV MAJALENGKA WH", "TA SO INV BANJARAN WH",
-      "TA SO INV MAJALAYA WH", "TA SO INV SUMEDANG WH", "TA SO INV KADIPATEN WH",
+      "TA SO INV SOREANG WH", "TA SO INV BANJARAN WH",
+      "TA SO INV MAJALAYA WH", "TA SO INV SOREANG 2 WH", "TA SO INV CIWIDEY WH",
     ]
   },
   "TELKOM - BANDUNG": {
@@ -30,14 +30,14 @@ export const AREA_CONFIG: Record<string, {
       "TA SO CCAN CIANJUR WH", "TA SO CCAN CUAURA WH", "TA SO CCAN CIMAHI WH",
       "TA SO CCAN GEGERKALONG WH", "TA SO CCAN KOPO WH", "TA SO CCAN LEMBANG WH",
       "TA SO CCAN PADALARANG WH", "TA SO CCAN RAJAWALI WH",
-      "TA SO CCAN SINDANGLAYA WH", "TA SO CCAN UJUNG BERUNG WH", " TA WITEL CCAN BANDUNG BARAT WH",
+      "TA SO CCAN SINDANGLAYA WH", "TA SO CCAN UJUNG BERUNG WH",
     ]
   },
   "TELKOM - SOREANG": {
     operator: "TELKOM", area: "SOREANG",
     warehouses: [
-      "TA SO CCAN SUMEDANG WH", "TA SO CCAN BANJARAN WH",
-      "TA SO CCAN MAJALAYA WH", "TA SO CCAN MAJALENGKA", "TA SO CCAN KADIPATEN WH", " TA WITEL CCAN JABAR TENGAH (BANDUNG) WH"
+      "TA SO CCAN SOREANG WH", "TA SO CCAN BANJARAN WH",
+      "TA SO CCAN MAJALAYA WH", "TA SO CCAN SOREANG 2 WH", "TA SO CCAN CIWIDEY WH",
     ]
   },
   "TIF - BANDUNG": {
@@ -55,9 +55,9 @@ export const AREA_CONFIG: Record<string, {
   },
 }
 
-export const NTE_STATUS = ["NTE BARU", "REFURBISH"] as const
-export const ALL_OPERATORS = ["TELKOMSEL", "TELKOM", "TIF"] as const
-export const ALL_AREAS = ["BANDUNG", "SOREANG"] as const
+export const NTE_STATUS: string[] = ["NTE BARU", "REFURBISH"]
+export const ALL_OPERATORS: string[] = ["TELKOMSEL", "TELKOM", "TIF"]
+export const ALL_AREAS: string[] = ["BANDUNG", "SOREANG"]
 
 export const NTE_CATALOG: Record<string, Record<string, string[]>> = {
   TELKOMSEL: {
