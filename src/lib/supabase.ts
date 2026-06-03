@@ -119,7 +119,22 @@ export async function getMasterStockNTE(
 
   return data || []
 }
+export interface MasterStockRow {
+  reg: string
+  witel: string
+  wh_so: string
 
+  status: string
+  jenis: string
+  jenis_2: string
+
+  merk: string
+  type: string
+
+  sn: string
+
+  owner: string
+}
 /* ==========================================================
    WAREHOUSE LIST
 ========================================================== */
