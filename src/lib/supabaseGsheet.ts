@@ -151,7 +151,7 @@ export async function getGsheetStats() {
     .limit(1)
     .single()
 
-  const operators = [...new Set((opData || []).map(r => r.operator).filter(Boolean))]
+  const operators = Array.from(new Set((opData || []).map(r => r.operator).filter(Boolean)))
 
   return {
     totalRows:    totalRows || 0,

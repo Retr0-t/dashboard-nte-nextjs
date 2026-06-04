@@ -19,7 +19,7 @@ export default function TrenPage() {
   const [barData, setBarData]     = useState<any[]>([])
   const [top10, setTop10]         = useState<any[]>([])
 
-  const allTypes = [...new Set(Object.values(NTE_CATALOG).flatMap(cat => Object.values(cat).flat()))]
+  const allTypes = Array.from(new Set(Object.values(NTE_CATALOG).flatMap(cat => Object.values(cat).flat())))
 
   useEffect(() => {
     getAvailableDates().then(d => { setDates(d); if (d[0]) setLatest(d[0]) })
@@ -67,7 +67,7 @@ export default function TrenPage() {
     })
   }, [latest])
 
-  const trendLines = [...new Set(trendData.flatMap(d => Object.keys(d).filter(k => k !== 'tanggal')))]
+  const trendLines = Array.from(new Set(trendData.flatMap(d => Object.keys(d).filter(k => k !== 'tanggal'))))
 
   return (
     <div className="animate-fade-in">

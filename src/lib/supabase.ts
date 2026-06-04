@@ -37,7 +37,7 @@ export async function getAvailableDates(): Promise<string[]> {
     .from('stok_harian')
     .select('tanggal')
     .order('tanggal', { ascending: false })
-  const unique = [...new Set((data || []).map(r => r.tanggal))]
+  const unique = Array.from(new Set((data || []).map(r => r.tanggal)))
   return unique
 }
 
