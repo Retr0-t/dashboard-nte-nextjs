@@ -19,27 +19,16 @@ function CodeBlock({ code }: { code: string }) {
 }
 
 export default function MasterPage() {
-  const [tab, setTab] = useState<string>('warehouse')
+  const [tab, setTab] = useState<'warehouse'|'nte'|'bot'>('warehouse')
 
   const tabs = [
     { key: 'warehouse', label: '🏭 Warehouse', icon: Building2 },
-    { key: 'nte', label: '📦 Katalog NTE', icon: Package },
-    { key: 'bot', label: '🤖 WA Bot', icon: Bot },
-  ]
+    { key: 'nte',       label: '📦 Katalog NTE', icon: Package },
+    { key: 'bot',       label: '🤖 WA Bot', icon: Bot },
+  ] as const
 
-  const totalWH = Object.values(AREA_CONFIG).reduce(
-    (s, v) => s + v.warehouses.length,
-    0
-  )
-
-  const allTypes = Object.values(NTE_CATALOG).reduce(
-    (acc: string[], cat: any) => {
-      return acc.concat(...Object.values(cat))
-    },
-    []
-  )
-
-  const totalNTE = Array.from(new Set(allTypes)).length
+  const totalWH  = Object.values(AREA_CONFIG).reduce((s, v) => s + v.warehouses.length, 0)
+  const totalNTE = [...new Set(Object.values(NTE_CATALOG).flatMap(cat => Object.values(cat).flat()))].length
 
   return (
     <div className="animate-fade-in">
