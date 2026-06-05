@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { count } = await supabaseAdmin
-    .from('gsheet_master_stok')
+    .from('laporan_stok_harian')
     .select('*', { count: 'exact', head: true })
 
   return NextResponse.json({
