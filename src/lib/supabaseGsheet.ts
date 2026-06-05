@@ -1,180 +1,332 @@
 // lib/supabaseGsheet.ts
-// Query data dari gsheet_master_stok dan transform ke format laporan harian
 
 import { supabase } from './supabase'
-import { shortWH } from './masterData'
 
-export interface GsheetUnit {
-  id: number
-  reg: string
-  witel: string
-  wh_code: string
-  warehouse: string
-  status_nte: string
-  jenis: string
-  jenis_nte: string
-  merk: string
-  type_nte: string
+/* ============================================================
+   TYPES
+============================================================ */
+
+export interface MasterStockRow {
+  id?: number
+
+  reg: string | null
+  witel: string | null
+
+  wh_code: string | null
+  wh_so: string | null
+
+  status: string | null
+
+  jenis: string | null
+  jenis_2: string | null
+
+  merk: string | null
+  type: string | null
+
   sn: string
-  status_scmt: string
-  tanggal_update: string
-  operator: string
-  synced_at: string
+
+  status_scmt: string | null
+
+  tanggal_update: string | null
+
+  owner: string | null
+
+  updated_at: string | null
 }
 
 export interface PivotRow {
-  jenis_nte: string
-  type_nte:  string
-  status_nte: string
+  jenis: string
+  type: string
+  status: string
   grand_total: number
-  [warehouse: string]: string | number
+
+  [key: string]: string | number
 }
 
-// ── Ambil data mentah dari G-Sheet master ────────────────────────────────────
-export async function getGsheetRaw(params: {
-  operator?:  string
-  warehouse?: string
-  area_keys?: string[]   // filter by area (Bandung/Soreang WH names)
-}): Promise<GsheetUnit[]> {
-  let q = supabase
-    .from('gsheet_master_stok')
+/* ============================================================
+   RAW DATA
+============================================================ */
+
+export async function getRawStock(params?: {
+  owner?: string
+  witel?: string
+  wh_so?: string
+}): Promise<MasterStockRow[]> {
+
+  let query = supabase
+    .from('master_stock_nte')
     .select('*')
-    .not('type_nte', 'is', null)
-    .not('warehouse', 'is', null)
 
-  if (params.operator)  q = q.eq('operator', params.operator)
-  if (params.warehouse) q = q.eq('warehouse', params.warehouse)
+  if (params?.owner) {
+    query = query.eq('owner', params.owner)
+  }
 
-  // Filter status hanya NTE BARU dan REFURBISH (abaikan "RUSAK" dll)
-  q = q.in('status_nte', ['NTE BARU', 'REFURBISH', 'NTE baru', 'Refurbish',
-                           'NTE BARU ', 'REFURBISH '])  // trim safety
+  if (params?.witel) {
+    query = query.ilike('witel', `%${params.witel}%`)
+  }
 
-  const { data, error } = await q
+  if (params?.wh_so) {
+    query = query.ilike('wh_so', `%${params.wh_so}%`)
+  }
+
+  const { data, error } = await query
+
   if (error) throw error
-  return (data || []) as GsheetUnit[]
+
+  return data || []
 }
 
-// ── COUNT per group → format laporan harian ──────────────────────────────────
-export async function getLaporanHarian(params: {
-  operator:   string
-  warehouses: string[]   // WH resmi dari masterData
-}): Promise<PivotRow[]> {
-  const { operator, warehouses } = params
+/* ============================================================
+   GET ALL WITEL
+============================================================ */
 
-  // Ambil semua unit untuk operator ini, filter hanya WH yang terdaftar
+export async function getAllWitel(): Promise<string[]> {
+
   const { data, error } = await supabase
-    .from('gsheet_master_stok')
-    .select('warehouse, jenis_nte, type_nte, status_nte')
-    .eq('operator', operator)
-    .not('type_nte', 'is', null)
-    .not('warehouse', 'is', null)
+    .from('master_stock_nte')
+    .select('witel')
 
   if (error) throw error
-  if (!data?.length) return []
 
-  // Normalisasi status
-  const normalize = (s: string) => {
-    const t = (s || '').trim().toUpperCase()
-    if (t.includes('BARU')) return 'NTE BARU'
-    if (t.includes('REFURB')) return 'REFURBISH'
-    return t
-  }
-
-  // COUNT per (jenis_nte, type_nte, status_nte, warehouse)
-  const countMap: Record<string, Record<string, number>> = {}
-  // key = "jenis||type||status"
-
-  for (const row of data) {
-    const wh     = row.warehouse?.trim()
-    const type   = (row.type_nte || '').trim()
-    const status = normalize(row.status_nte || '')
-    const jenis  = (row.jenis_nte || 'Lainnya').trim()
-
-    if (!wh || !type || !status) continue
-
-    const key = `${jenis}||${type}||${status}`
-    if (!countMap[key]) countMap[key] = {}
-    countMap[key][wh] = (countMap[key][wh] || 0) + 1
-  }
-
-  // Build pivot rows
-  const pivotRows: PivotRow[] = []
-
-  for (const [key, whCounts] of Object.entries(countMap)) {
-    const [jenis_nte, type_nte, status_nte] = key.split('||')
-
-    const row: PivotRow = {
-      jenis_nte, type_nte, status_nte,
-      grand_total: 0,
-    }
-
-    let grand = 0
-    for (const wh of warehouses) {
-      const count = whCounts[wh] || 0
-      row[wh]     = count
-      grand      += count
-    }
-    row.grand_total = grand
-
-    // Hanya tampilkan baris yang ada stoknya
-    if (grand > 0) pivotRows.push(row)
-  }
-
-  // Sort: jenis_nte → type_nte → status (NTE BARU dulu)
-  pivotRows.sort((a, b) => {
-    if (a.jenis_nte !== b.jenis_nte) return a.jenis_nte.localeCompare(b.jenis_nte)
-    if (a.type_nte  !== b.type_nte)  return a.type_nte.localeCompare(b.type_nte)
-    // NTE BARU sebelum REFURBISH
-    if (a.status_nte === 'NTE BARU' && b.status_nte !== 'NTE BARU') return -1
-    if (a.status_nte !== 'NTE BARU' && b.status_nte === 'NTE BARU') return 1
-    return 0
-  })
-
-  return pivotRows
+  return Array.from(
+    new Set(
+      (data || [])
+        .map(r => r.witel)
+        .filter(Boolean)
+    )
+  )
 }
 
-// ── Statistik G-Sheet ─────────────────────────────────────────────────────────
-export async function getGsheetStats() {
-  const { count: totalRows } = await supabase
-    .from('gsheet_master_stok')
-    .select('*', { count: 'exact', head: true })
+/* ============================================================
+   GET ALL OWNER
+============================================================ */
 
-  const { data: opData } = await supabase
-    .from('gsheet_master_stok')
-    .select('operator')
-    .not('operator', 'is', null)
+export async function getAllOwner(): Promise<string[]> {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('owner')
+
+  if (error) throw error
+
+  return Array.from(
+    new Set(
+      (data || [])
+        .map(r => r.owner)
+        .filter(Boolean)
+    )
+  )
+}
+
+/* ============================================================
+   GET ALL WH SO
+============================================================ */
+
+export async function getAllWarehouse(): Promise<string[]> {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('wh_so')
+
+  if (error) throw error
+
+  return Array.from(
+    new Set(
+      (data || [])
+        .map(r => r.wh_so)
+        .filter(Boolean)
+    )
+  )
+}
+
+/* ============================================================
+   DASHBOARD SUMMARY
+============================================================ */
+
+export async function getDashboardStats() {
+
+  const { count, error } = await supabase
+    .from('master_stock_nte')
+    .select('*', {
+      count: 'exact',
+      head: true
+    })
+
+  if (error) throw error
 
   const { data: latest } = await supabase
-    .from('gsheet_master_stok')
-    .select('synced_at')
-    .order('synced_at', { ascending: false })
+    .from('master_stock_nte')
+    .select('updated_at')
+    .order('updated_at', {
+      ascending: false
+    })
     .limit(1)
     .single()
 
-  const operators = Array.from(new Set((opData || []).map(r => r.operator).filter(Boolean)))
-
   return {
-    totalRows:    totalRows || 0,
-    operators,
-    lastSyncedAt: latest?.synced_at || null,
+    totalRows: count || 0,
+    lastUpdated:
+      latest?.updated_at || null
   }
 }
 
-// ── Trigger sync G-Sheet → stok_harian ───────────────────────────────────────
-export async function triggerSyncToStokHarian(tanggal?: string) {
-  const { data, error } = await supabase.rpc('sync_gsheet_to_stok_harian', {
-    p_tanggal: tanggal || new Date().toISOString().split('T')[0],
-  })
+/* ============================================================
+   TELKOM BANDUNG
+============================================================ */
+
+export async function getTelkomBandung() {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('*')
+    .eq('owner', 'CCAN')
+    .ilike('witel', '%BANDUNG%')
+
   if (error) throw error
-  return data?.[0] || { synced_rows: 0 }
+
+  return data || []
 }
 
-export async function getGsheetLastSync(): Promise<string | null> {
+/* ============================================================
+   TELKOM SOREANG
+============================================================ */
+
+export async function getTelkomSoreang() {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('*')
+    .eq('owner', 'CCAN')
+    .ilike('witel', '%SOREANG%')
+
+  if (error) throw error
+
+  return data || []
+}
+
+/* ============================================================
+   TELKOMSEL BANDUNG
+============================================================ */
+
+export async function getTelkomselBandung() {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('*')
+    .eq('owner', 'INV')
+    .ilike('witel', '%BANDUNG%')
+
+  if (error) throw error
+
+  return data || []
+}
+
+/* ============================================================
+   TELKOMSEL SOREANG
+============================================================ */
+
+export async function getTelkomselSoreang() {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('*')
+    .eq('owner', 'INV')
+    .ilike('witel', '%SOREANG%')
+
+  if (error) throw error
+
+  return data || []
+}
+
+/* ============================================================
+   TIF BANDUNG
+============================================================ */
+
+export async function getTifBandung() {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('*')
+    .eq('owner', 'TIF')
+    .ilike('witel', '%BANDUNG%')
+
+  if (error) throw error
+
+  return data || []
+}
+
+/* ============================================================
+   TIF SOREANG
+============================================================ */
+
+export async function getTifSoreang() {
+
+  const { data, error } = await supabase
+    .from('master_stock_nte')
+    .select('*')
+    .eq('owner', 'TIF')
+    .ilike('witel', '%SOREANG%')
+
+  if (error) throw error
+
+  return data || []
+}
+
+/* ============================================================
+   BUILD PIVOT
+============================================================ */
+
+export function buildPivot(
+  rows: MasterStockRow[]
+): PivotRow[] {
+
+  const map: Record<string, PivotRow> = {}
+
+  for (const row of rows) {
+
+    const warehouse =
+      row.wh_so || 'UNKNOWN'
+
+    const key =
+      `${row.jenis}|${row.type}|${row.status}`
+
+    if (!map[key]) {
+
+      map[key] = {
+        jenis: row.jenis || '',
+        type: row.type || '',
+        status: row.status || '',
+        grand_total: 0
+      }
+    }
+
+    if (!map[key][warehouse]) {
+      map[key][warehouse] = 0
+    }
+
+    map[key][warehouse] =
+      Number(map[key][warehouse]) + 1
+
+    map[key].grand_total += 1
+  }
+
+  return Object.values(map)
+}
+
+/* ============================================================
+   LAST SYNC
+============================================================ */
+
+export async function getLastSync() {
+
   const { data } = await supabase
-    .from('gsheet_master_stok')
-    .select('synced_at')
-    .order('synced_at', { ascending: false })
+    .from('master_stock_nte')
+    .select('updated_at')
+    .order('updated_at', {
+      ascending: false
+    })
     .limit(1)
     .single()
-  return data?.synced_at || null
+
+  return data?.updated_at || null
 }
