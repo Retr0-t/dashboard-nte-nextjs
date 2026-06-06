@@ -122,7 +122,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         {ALL_OPERATORS.map(op => {
           const col = OP_COLORS[op]
-          const opKeys = Object.entries(AREA_CONFIG).filter(([, v]) => v.operator === op)
+         const opKeys = Object.entries(AREA_CONFIG).filter(([, v]) => v.owner === op)
           const opWH = opKeys.reduce((s, [, v]) => s + v.warehouses.length, 0)
           const opReported = coverage.filter(   (r: any) => r.owner === OWNER_MAP[op] ).length
           const pct = opWH > 0 ? Math.round(opReported / opWH * 100) : 0
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {Object.entries(AREA_CONFIG)
-                    .filter(([, v]) => v.operator === op)
+                    .filter(([, v]) => v.owner === op)
                     .map(([ak, cfg]) => (
                       <div key={ak} className="bg-slate-50 rounded-xl p-3">
                         <div className="text-xs font-semibold text-slate-600 mb-2">📍 {cfg.area}</div>
