@@ -8,10 +8,7 @@ import { FileDown, ImageDown, RefreshCw, Eye, EyeOff, Database } from 'lucide-re
 import { Suspense } from 'react'
 import toast from 'react-hot-toast'
 
-interface PivotRow {
-  jenis_nte: string; type_nte: string; status_nte: string; grand_total: number
-  [wh: string]: string | number
-}
+import type { PivotRow } from '@/lib/supabase'
 
 function LaporanContent() {
   const params   = useSearchParams()
