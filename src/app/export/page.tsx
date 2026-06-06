@@ -21,7 +21,7 @@ export default function ExportPage() {
     setExporting(key)
     try {
       const cfg  = AREA_CONFIG[ak]
-      const rows = await getLaporanHarian({ operator: cfg.operator, warehouses: cfg.warehouses })
+      const rows = await getLaporanHarian({ owner: cfg.operator, wh_so: cfg.warehouses })
       if (!rows.length) { toast.error('Tidak ada data stok untuk ' + cfg.area); return }
       const d = { rows, warehouses: cfg.warehouses, operator: cfg.operator, area: cfg.area, tanggal }
       if (fmt === 'pdf') await generatePDF(d)
@@ -44,9 +44,15 @@ export default function ExportPage() {
     toast.success(`Selesai! ${done} laporan di-export.`, { id: 'exp-all' })
   }
 
-  const lastSync = stats?.lastSyncedAt
-    ? formatDistanceToNow(new Date(stats.lastSyncedAt), { addSuffix: true, locale: id })
-    : null
+  const lastSync = stats?.lastUpdated
+  ? formatDistanceToNow(
+      new Date(stats.lastUpdated),
+      {
+        addSuffix: true,
+        locale: id
+      }
+    )
+  : null
 
   return (
     <div className="animate-fade-in">
