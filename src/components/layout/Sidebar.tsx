@@ -2,19 +2,16 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  LayoutDashboard, TableProperties, PenSquare, Upload,
-  BarChart3, RefreshCw, TrendingUp, Download,
-  Database, Bot, ChevronRight, Sheet
+  LayoutDashboard, TableProperties, RefreshCw,
+  Download, Sheet, Database, BarChart3, ChevronRight
 } from 'lucide-react'
 
 const NAV = [
   { href: '/dashboard',      icon: LayoutDashboard, label: 'Overview' },
   { href: '/laporan-harian', icon: TableProperties,  label: 'Laporan Harian' },
-  { href: '/input',          icon: PenSquare,        label: 'Input Stok' },
-  { href: '/upload',         icon: Upload,           label: 'Upload Excel' },
   { href: '/rekap',          icon: RefreshCw,        label: 'Rekap Otomatis' },
-  { href: '/tren',           icon: TrendingUp,       label: 'Tren Stok' },
-  { href: '/export',         icon: Download,         label: 'Export PDF/JPG' },
+  { href: '/export',         icon: Download,         label: 'Export PDF / JPG' },
+  { href: '/gsheet',         icon: Sheet,            label: 'G-Sheet Sync' },
   { href: '/master',         icon: Database,         label: 'Master Data' },
 ]
 
@@ -43,11 +40,11 @@ export function Sidebar() {
 
       {/* Operator dots */}
       <div className="px-5 py-3 border-b border-white/10">
-        <div className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-2">Operator</div>
+        <div className="text-[10px] text-slate-600 font-semibold uppercase tracking-widest mb-2">Operator</div>
         <div className="flex gap-3">
           {Object.entries(OP_DOT).map(([op, color]) => (
             <div key={op} className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+              <div className="w-2 h-2 rounded-full" style={{ background: color }} />
               <span className="text-[11px] text-slate-400">{op}</span>
             </div>
           ))}
@@ -71,20 +68,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Bot link */}
       <div className="p-4 border-t border-white/10">
-        <Link href="/master">
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition cursor-pointer">
-            <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-              <Bot size={12} className="text-emerald-400" />
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold text-white">WA Bot Setup</div>
-              <div className="text-[10px] text-slate-500">Panduan & perintah</div>
-            </div>
-          </div>
-        </Link>
-        <div className="mt-3 text-[10px] text-slate-600 text-center">v2.0.0 · NTE Operations</div>
+        <div className="text-[10px] text-slate-600 text-center">v2.0.0 · NTE Operations · Telkom Indonesia</div>
       </div>
     </aside>
   )

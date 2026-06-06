@@ -1,112 +1,91 @@
-# NTE Dashboard — Next.js + Supabase
-
-Sistem pelaporan stok harian NTE (Network Terminal Environment)  
-Telkom Indonesia · Area Bandung & Soreang · Operator: Telkomsel, Telkom, TIF
-
----
-
-## Tech Stack
-
-| Layer     | Teknologi |
-|-----------|-----------|
-| Frontend  | Next.js 14 (App Router) + TypeScript |
-| Styling   | Tailwind CSS |
-| Database  | Supabase (PostgreSQL) |
-| Charts    | Recharts |
-| Export    | jsPDF + html2canvas |
-| Deploy    | Vercel |
+# NTE Dashboard v2.0
+**Sistem Pelaporan Stok Harian Network Terminal Environment**
+Telkom Indonesia · Bandung & Soreang · Operator: Telkomsel, Telkom, TIF
 
 ---
 
-## Setup (5 menit)
+## Stack
+| Layer | Teknologi |
+|-------|-----------|
+| Frontend | Next.js 14 + TypeScript + Tailwind CSS |
+| Database | Supabase (PostgreSQL) |
+| Sync | Google Apps Script (onEdit + daily) |
+| Export | jsPDF + html2canvas |
+| Deploy | Vercel |
 
-### 1. Buat project Supabase
+---
 
-1. Buka [supabase.com](https://supabase.com) → New project
-2. Buka **SQL Editor** → paste isi file `supabase_schema.sql` → Run
-3. Buka **Settings → API** → salin `URL` dan `anon key`
+## Setup (urutan wajib)
 
-### 2. Setup environment
+### 1. Supabase
+1. Buat project di [supabase.com](https://supabase.com)
+2. SQL Editor → paste & run `supabase_schema.sql`
+3. Catat **URL** dan **anon key** dari Settings → API
 
+### 2. Environment variables
 ```bash
 cp .env.example .env.local
-# Edit .env.local, isi SUPABASE_URL dan SUPABASE_ANON_KEY
+# Isi NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY
 ```
 
-### 3. Install & jalankan
-
+### 3. Install & run
 ```bash
 npm install
 npm run dev
 # Buka http://localhost:3000
 ```
 
----
-
-## Deploy ke Vercel
-
+### 4. Deploy ke Vercel
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
 vercel
-
-# Set environment variables di dashboard Vercel:
-# NEXT_PUBLIC_SUPABASE_URL = ...
-# NEXT_PUBLIC_SUPABASE_ANON_KEY = ...
+# Tambahkan env vars di Vercel Dashboard:
+# NEXT_PUBLIC_SUPABASE_URL
+# NEXT_PUBLIC_SUPABASE_ANON_KEY
+# SUPABASE_SERVICE_ROLE_KEY
+# GSHEET_SYNC_SECRET
 ```
 
-Atau: push ke GitHub → import di [vercel.com](https://vercel.com) → set env vars → deploy otomatis.
+### 5. Setup G-Sheet Sync
+1. Buka G-Sheet → Extensions → Apps Script
+2. Paste isi `NTE_Sync_AppsScript.js`
+3. Isi `CONFIG` (SUPABASE_URL, SUPABASE_KEY, NEXTJS_API_URL)
+4. Jalankan `setupTriggers()` → authorize → selesai
 
 ---
 
 ## Halaman
-
 | Route | Keterangan |
 |-------|-----------|
-| `/dashboard` | Overview stok + KPI + coverage WH |
-| `/laporan-harian` | Pivot tabel mirip G-Sheet + export PDF/JPG |
-| `/input` | Input stok spreadsheet-style (semua WH 1 layar) |
-| `/upload` | Upload data dari Excel |
-| `/rekap` | Rekap otomatis semua operator-area |
-| `/tren` | Grafik tren stok harian |
-| `/export` | Export PDF & JPG per operator-area |
-| `/master` | Master data WH, katalog NTE, panduan WA Bot |
+| `/dashboard` | Overview stok + coverage WH semua operator |
+| `/laporan-harian` | Pivot table stok NTE per operator-area (dari Supabase) |
+| `/rekap` | Rekap semua operator-area sekaligus |
+| `/export` | Download PDF & JPG laporan |
+| `/gsheet` | Status sync G-Sheet + panduan setup |
+| `/master` | Daftar warehouse & info sistem |
 
 ---
 
-## Edit Master Data
+## Cara kerja laporan harian
+```
+G-Sheet (1 baris = 1 unit NTE dengan SN unik)
+    ↓ Apps Script onEdit / daily 06:00 WIB
+master_stok_nte (Supabase)
+    ↓ COUNT(*) GROUP BY (warehouse × type_nte × status_nte)
+Laporan Harian (pivot table identik dengan G-Sheet laporan)
+```
 
-Buka `src/lib/masterData.ts`:
+---
 
+## Edit warehouse
+Edit `src/lib/masterData.ts` bagian `AREA_CONFIG`:
 ```ts
-// Tambah warehouse baru
 "TELKOMSEL - BANDUNG": {
   warehouses: [
     "TA SO INV AHMAD YANI WH",
-    "TA SO INV WAREHOUSE BARU", // ← tambah di sini
+    "TA SO INV WH BARU",  // ← tambah di sini
   ]
 }
-
-// Tambah type NTE baru
-NTE_CATALOG.TELKOMSEL["ONT DUAL BAND"].push("ONT_BARU_TYPE")
 ```
 
 ---
-
-## WhatsApp Bot
-
-Lihat `nte_whatsapp_bot/README.md` untuk panduan setup bot.
-
-Perintah utama:
-```
-/laporan                     → semua laporan hari ini
-/laporan telkomsel bandung   → 1 laporan PDF
-/laporan semua jpg           → semua JPG
-/stok                        → ringkasan teks
-```
-
----
-
 *NTE Operations · Telkom Indonesia · 2025*

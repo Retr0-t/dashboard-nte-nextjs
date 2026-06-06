@@ -20,14 +20,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="flex min-h-screen">
           <Sidebar />
           <main className="flex-1 ml-64 min-h-screen">
-            <div className="p-6 max-w-[1600px] mx-auto">
-              {children}
-            </div>
+            <div className="p-6 max-w-[1600px] mx-auto">{children}</div>
           </main>
         </div>
         <Toaster position="top-right" toastOptions={{
           style: { fontFamily: 'var(--font-dm-sans)', fontSize: '13px', borderRadius: '10px' },
-          success: { iconTheme: { primary: '#1B5E20', secondary: '#fff' } },
         }} />
       </body>
     </html>

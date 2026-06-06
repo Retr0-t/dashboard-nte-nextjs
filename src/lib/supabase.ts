@@ -1,277 +1,151 @@
 // lib/supabase.ts
-
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
 export const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-/* ============================================================
-   TYPES
-============================================================ */
-
-export interface MasterStockRow {
-  id?: number
-
-  reg: string | null
-  witel: string | null
-
-  wh_code: string | null
-  wh_so: string | null
-
-  status: string | null
-
-  jenis: string | null
-  jenis_2: string | null
-
-  merk: string | null
-  type: string | null
-
-  sn: string
-
-  status_scmt: string | null
-
-  tanggal_update: string | null
-
-  owner: string | null
-
-  updated_at?: string
+// ── Types ──────────────────────────────────────────────────────────────────
+export interface MasterStokRow {
+  id:            number
+  row_number:    number
+  reg:           string
+  witel:         string
+  wh_code:       string
+  warehouse:     string
+  status_nte:    string
+  jenis:         string
+  jenis_nte:     string
+  merk:          string
+  type_nte:      string
+  sn:            string
+  status_scmt:   string
+  tanggal_update:string
+  operator:      string
+  synced_at:     string
 }
 
-/* ============================================================
-   GET ALL DATA
-============================================================ */
-
-export async function getMasterStock(): Promise<MasterStockRow[]> {
-  const { data, error } = await supabase
-    .from('master_stock_nte')
-    .select('*')
-    .order('updated_at', { ascending: false })
-
-  if (error) {
-    console.error(error)
-    throw error
-  }
-
-  return data || []
+export interface PivotRow {
+  jenis_nte:   string
+  type_nte:    string
+  status_nte:  string
+  grand_total: number
+  [warehouse: string]: string | number
 }
 
-/* ============================================================
-   FILTER OWNER
-============================================================ */
+// ── Normalize status ────────────────────────────────────────────────────────
+function normalizeStatus(s: string): string {
+  const t = (s || '').trim().toUpperCase()
+  if (t.includes('BARU'))   return 'NTE BARU'
+  if (t.includes('REFURB')) return 'REFURBISH'
+  return t
+}
 
-export async function getByOwner(
-  owner: string
-): Promise<MasterStockRow[]> {
+// ── getLaporanHarian ────────────────────────────────────────────────────────
+// Ambil semua unit dari master_stok_nte untuk 1 operator,
+// lalu COUNT per (jenis_nte, type_nte, status_nte, warehouse) → pivot
+export async function getLaporanHarian(params: {
+  operator:   string
+  warehouses: string[]
+}): Promise<PivotRow[]> {
+  const { operator, warehouses } = params
 
   const { data, error } = await supabase
-    .from('master_stock_nte')
-    .select('*')
-    .eq('owner', owner)
+    .from('master_stok_nte')
+    .select('warehouse, jenis_nte, type_nte, status_nte')
+    .eq('operator', operator)
+    .not('type_nte',  'is', null)
+    .not('warehouse', 'is', null)
 
-  if (error) {
-    console.error(error)
-    throw error
+  if (error) throw error
+  if (!data?.length) return []
+
+  // COUNT per group
+  const countMap: Record<string, Record<string, number>> = {}
+
+  for (const row of data) {
+    const wh     = (row.warehouse  || '').trim()
+    const type   = (row.type_nte   || '').trim()
+    const status = normalizeStatus(row.status_nte || '')
+    const jenis  = (row.jenis_nte  || 'Lainnya').trim()
+
+    if (!wh || !type || !['NTE BARU', 'REFURBISH'].includes(status)) continue
+
+    const key = `${jenis}||${type}||${status}`
+    if (!countMap[key]) countMap[key] = {}
+    countMap[key][wh] = (countMap[key][wh] || 0) + 1
   }
 
-  return data || []
+  // Build pivot
+  const rows: PivotRow[] = []
+  for (const [key, whCounts] of Object.entries(countMap)) {
+    const [jenis_nte, type_nte, status_nte] = key.split('||')
+    const row: PivotRow = { jenis_nte, type_nte, status_nte, grand_total: 0 }
+    let grand = 0
+    for (const wh of warehouses) {
+      const v = whCounts[wh] || 0
+      row[wh] = v
+      grand  += v
+    }
+    row.grand_total = grand
+    if (grand > 0) rows.push(row)
+  }
+
+  // Sort: jenis → type → NTE BARU dulu
+  rows.sort((a, b) => {
+    if (a.jenis_nte  !== b.jenis_nte)  return a.jenis_nte.localeCompare(b.jenis_nte)
+    if (a.type_nte   !== b.type_nte)   return a.type_nte.localeCompare(b.type_nte)
+    if (a.status_nte === 'NTE BARU')   return -1
+    if (b.status_nte === 'NTE BARU')   return  1
+    return 0
+  })
+
+  return rows
 }
 
-/* ============================================================
-   FILTER WITEL
-============================================================ */
+// ── getDashboardStats ───────────────────────────────────────────────────────
+export async function getDashboardStats() {
+  const { count: total } = await supabase
+    .from('master_stok_nte')
+    .select('*', { count: 'exact', head: true })
 
-export async function getByWitel(
-  witel: string
-): Promise<MasterStockRow[]> {
+  const { data: opData } = await supabase
+    .from('master_stok_nte')
+    .select('operator')
+    .not('operator', 'is', null)
 
-  const { data, error } = await supabase
-    .from('master_stock_nte')
-    .select('*')
-    .ilike('witel', `%${witel}%`)
+  const { data: latest } = await supabase
+    .from('master_stok_nte')
+    .select('synced_at, tanggal_update')
+    .order('synced_at', { ascending: false })
+    .limit(1)
+    .single()
 
-  if (error) {
-    console.error(error)
-    throw error
-  }
-
-  return data || []
-}
-
-/* ============================================================
-   FILTER OWNER + WITEL
-============================================================ */
-
-export async function getByOwnerAndWitel(
-  owner: string,
-  witel: string
-): Promise<MasterStockRow[]> {
-
-  const { data, error } = await supabase
-    .from('master_stock_nte')
-    .select('*')
-    .eq('owner', owner)
-    .ilike('witel', `%${witel}%`)
-
-  if (error) {
-    console.error(error)
-    throw error
-  }
-
-  return data || []
-}
-
-/* ============================================================
-   DASHBOARD SUMMARY
-============================================================ */
-
-export async function getDashboardSummary() {
-
-  const { count, error } = await supabase
-    .from('master_stock_nte')
-    .select('*', {
-      count: 'exact',
-      head: true
-    })
-
-  if (error) {
-    console.error(error)
-    throw error
-  }
+  const operators = Array.from(new Set((opData || []).map((r: any) => r.operator).filter(Boolean)))
 
   return {
-    total_stock: count || 0
+    totalUnits:    total || 0,
+    operators,
+    lastSyncedAt:  latest?.synced_at     || null,
+    lastUpdatedAt: latest?.tanggal_update || null,
   }
 }
 
-/* ============================================================
-   TOTAL PER OWNER
-============================================================ */
+// ── getWHCoverage ───────────────────────────────────────────────────────────
+export async function getWHCoverage(operator?: string) {
+  let q = supabase
+    .from('master_stok_nte')
+    .select('operator, warehouse')
+    .not('warehouse', 'is', null)
 
-export async function getOwnerSummary() {
+  if (operator) q = q.eq('operator', operator)
 
-  const { data, error } = await supabase
-    .from('master_stock_nte')
-    .select('owner')
-
-  if (error) {
-    console.error(error)
-    throw error
-  }
-
-  const summary: Record<string, number> = {}
-
-  data?.forEach(row => {
-
-    const owner = row.owner || 'UNKNOWN'
-
-    if (!summary[owner]) {
-      summary[owner] = 0
-    }
-
-    summary[owner]++
+  const { data } = await q
+  const seen = new Set<string>()
+  return (data || []).filter((r: any) => {
+    const k = `${r.operator}|${r.warehouse}`
+    if (seen.has(k)) return false
+    seen.add(k); return true
   })
-
-  return summary
-}
-
-/* ============================================================
-   TOTAL PER WITEL
-============================================================ */
-
-export async function getWitelSummary() {
-
-  const { data, error } = await supabase
-    .from('master_stock_nte')
-    .select('witel')
-
-  if (error) {
-    console.error(error)
-    throw error
-  }
-
-  const summary: Record<string, number> = {}
-
-  data?.forEach(row => {
-
-    const witel = row.witel || 'UNKNOWN'
-
-    if (!summary[witel]) {
-      summary[witel] = 0
-    }
-
-    summary[witel]++
-  })
-
-  return summary
-}
-
-/* ============================================================
-   TELKOM BANDUNG
-============================================================ */
-
-export async function getTelkomBandung() {
-  return getByOwnerAndWitel(
-    'CCAN',
-    'BANDUNG'
-  )
-}
-
-/* ============================================================
-   TELKOM SOREANG
-============================================================ */
-
-export async function getTelkomSoreang() {
-  return getByOwnerAndWitel(
-    'CCAN',
-    'SOREANG'
-  )
-}
-
-/* ============================================================
-   TELKOMSEL BANDUNG
-============================================================ */
-
-export async function getTelkomselBandung() {
-  return getByOwnerAndWitel(
-    'INV',
-    'BANDUNG'
-  )
-}
-
-/* ============================================================
-   TELKOMSEL SOREANG
-============================================================ */
-
-export async function getTelkomselSoreang() {
-  return getByOwnerAndWitel(
-    'INV',
-    'SOREANG'
-  )
-}
-
-/* ============================================================
-   TIF BANDUNG
-============================================================ */
-
-export async function getTifBandung() {
-  return getByOwnerAndWitel(
-    'TIF',
-    'BANDUNG'
-  )
-}
-
-/* ============================================================
-   TIF SOREANG
-============================================================ */
-
-export async function getTifSoreang() {
-  return getByOwnerAndWitel(
-    'TIF',
-    'SOREANG'
-  )
 }
