@@ -26,7 +26,7 @@ function LaporanContent() {
   const [exporting, setExporting] = useState<'pdf'|'jpg'|null>(null)
 
   const opKeys = Object.entries(AREA_CONFIG)
-    .filter(([, v]) => v.operator === selOp)
+    .filter(([, v]) => v.owner === selOp)
     .map(([k]) => k)
 
   // Set default area key
@@ -40,8 +40,8 @@ function LaporanContent() {
     }
   }, [selOp, initArea])
 
-  const cfg = AREA_CONFIG[selKey] || { warehouses: [], area: '', operator: '' }
-  const whs = cfg.warehouses
+  const cfg = AREA_CONFIG[selKey] || { wh_so: [], area: '', owner: '' }
+  const whs = cfg.wh_so
   const col = OP_COLORS[selOp] || OP_COLORS['TELKOMSEL']
 
   // Load pivot data
@@ -49,7 +49,7 @@ function LaporanContent() {
     if (!selOp || !selKey || !whs.length) return
     setLoading(true)
     try {
-      const data = await getLaporanHarian({ operator: selOp, warehouses: whs })
+      const data = await getLaporanHarian({ owner: selOp, wh_so: whs })
       setRows(data)
     } catch (e: any) {
       toast.error('Gagal memuat: ' + e.message)
