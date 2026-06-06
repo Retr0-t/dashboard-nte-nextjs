@@ -26,8 +26,8 @@ function LaporanContent() {
   const [exporting, setExporting] = useState<'pdf'|'jpg'|null>(null)
 
   const opKeys = Object.entries(AREA_CONFIG)
-    .filter(([, v]) => v.owner === selOp)
-    .map(([k]) => k)
+  .filter(([, v]) => v.operator === selOp)
+  .map(([k]) => k)
 
   // Set default area key
   useEffect(() => {
