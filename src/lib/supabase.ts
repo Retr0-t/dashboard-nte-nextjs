@@ -43,7 +43,7 @@ export interface PivotRow {
   status: string
   grand_total: number
 
-  [warehouse: string]: string | number
+  [wh_so: string]: string | number
 }
 
 /* ==========================================================
