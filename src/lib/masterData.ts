@@ -1,13 +1,21 @@
 // lib/masterData.ts
 
-export const AREA_CONFIG: Record<string, { operator: string; area: string; warehouses: string[] }> = {
+export const AREA_CONFIG: Record<
+  string,
+  {
+    owner: string
+    area: string
+    warehouses: string[]
+  }
+> = {
   "TELKOMSEL - BANDUNG": {
-    operator: "TELKOMSEL", area: "BANDUNG",
+    owner: "TELKOMSEL",
+    area: "BANDUNG",
     warehouses: [
       "TA SO INV AHMAD YANI WH",
       "TA SO INV BANDUNG CENTRUM WH",
       "TA SO INV CIANJUR WH",
-      "TA SO INV CUAURA WH",
+      "TA SO INV CIJAURA WH",
       "TA SO INV CIMAHI WH",
       "TA SO INV GEGERKALONG WH",
       "TA SO INV KOPO WH",
@@ -18,8 +26,10 @@ export const AREA_CONFIG: Record<string, { operator: string; area: string; wareh
       "TA SO INV UJUNG BERUNG WH",
     ],
   },
+
   "TELKOMSEL - SOREANG": {
-    operator: "TELKOMSEL", area: "SOREANG",
+    owner: "TELKOMSEL",
+    area: "SOREANG",
     warehouses: [
       "TA SO INV SOREANG WH",
       "TA SO INV BANJARAN WH",
@@ -28,8 +38,10 @@ export const AREA_CONFIG: Record<string, { operator: string; area: string; wareh
       "TA SO INV CIWIDEY WH",
     ],
   },
+
   "TELKOM - BANDUNG": {
-    operator: "TELKOM", area: "BANDUNG",
+    owner: "TELKOM",
+    area: "BANDUNG",
     warehouses: [
       "TA SO CCAN AHMAD YANI WH",
       "TA SO CCAN BANDUNG CENTRUM WH",
@@ -45,8 +57,10 @@ export const AREA_CONFIG: Record<string, { operator: string; area: string; wareh
       "TA SO CCAN UJUNG BERUNG WH",
     ],
   },
+
   "TELKOM - SOREANG": {
-    operator: "TELKOM", area: "SOREANG",
+    owner: "TELKOM",
+    area: "SOREANG",
     warehouses: [
       "TA SO CCAN SOREANG WH",
       "TA SO CCAN BANJARAN WH",
@@ -55,8 +69,10 @@ export const AREA_CONFIG: Record<string, { operator: string; area: string; wareh
       "TA SO CCAN CIWIDEY WH",
     ],
   },
+
   "TIF - BANDUNG": {
-    operator: "TIF", area: "BANDUNG",
+    owner: "TIF",
+    area: "BANDUNG",
     warehouses: [
       "TA SO TIF BANDUNG CENTRIUM WH",
       "TA SO TIF CIJAURA WH",
@@ -64,8 +80,10 @@ export const AREA_CONFIG: Record<string, { operator: string; area: string; wareh
       "TA SO TIF UJUNGBERUNG WH",
     ],
   },
+
   "TIF - SOREANG": {
-    operator: "TIF", area: "SOREANG",
+    owner: "TIF",
+    area: "SOREANG",
     warehouses: [
       "TA SO TIF KADIPATEN WH",
       "TA SO TIF MAJALENGKA WH",
@@ -74,26 +92,55 @@ export const AREA_CONFIG: Record<string, { operator: string; area: string; wareh
   },
 }
 
-export const ALL_OPERATORS: string[] = ["TELKOMSEL", "TELKOM", "TIF"]
-export const ALL_AREAS:     string[] = ["BANDUNG", "SOREANG"]
+export const ALL_OPERATORS = [
+  "TELKOMSEL",
+  "TELKOM",
+  "TIF",
+]
 
-export const OP_COLORS: Record<string, { bg: string; light: string; border: string }> = {
-  TELKOMSEL: { bg: "#1B5E20", light: "#E8F5E9", border: "#A5D6A7" },
-  TELKOM:    { bg: "#0D47A1", light: "#E3F2FD", border: "#90CAF9" },
-  TIF:       { bg: "#E65100", light: "#FFF3E0", border: "#FFCC80" },
+export const ALL_AREAS = [
+  "BANDUNG",
+  "SOREANG",
+]
+
+export const OP_COLORS: Record<
+  string,
+  {
+    bg: string
+    light: string
+    border: string
+  }
+> = {
+  TELKOMSEL: {
+    bg: "#1B5E20",
+    light: "#E8F5E9",
+    border: "#A5D6A7",
+  },
+
+  TELKOM: {
+    bg: "#0D47A1",
+    light: "#E3F2FD",
+    border: "#90CAF9",
+  },
+
+  TIF: {
+    bg: "#E65100",
+    light: "#FFF3E0",
+    border: "#FFCC80",
+  },
 }
 
 export function shortWH(wh: string): string {
   return wh
-    .replace(/TA SO INV /g, "")
-    .replace(/TA SO CCAN /g, "")
-    .replace(/TA SO TIF /g, "")
-    .replace(/ WH$/g, "")
+    .replace(/TA SO INV /g, '')
+    .replace(/TA SO CCAN /g, '')
+    .replace(/TA SO TIF /g, '')
+    .replace(/ WH$/g, '')
     .trim()
 }
 
-export function getAreaKeys(operator?: string): string[] {
+export function getAreaKeys(owner?: string): string[] {
   return Object.entries(AREA_CONFIG)
-    .filter(([, v]) => !operator || v.operator === operator)
+    .filter(([, v]) => !owner || v.owner === owner)
     .map(([k]) => k)
 }
