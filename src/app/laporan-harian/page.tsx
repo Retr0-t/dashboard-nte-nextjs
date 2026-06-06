@@ -41,7 +41,7 @@ function LaporanContent() {
   }, [selOp, initArea])
 
   const cfg = AREA_CONFIG[selKey] || { wh_so: [], area: '', owner: '' }
-  const whs = cfg.wh_so
+  const whs = cfg.warehouses
   const col = OP_COLORS[selOp] || OP_COLORS['TELKOMSEL']
 
   // Load pivot data
