@@ -52,10 +52,10 @@ export interface PivotRow {
 
 export async function getLaporanHarian(params: {
   owner: string
-  warehouses: string[]
+  wh_so: string[]
 }): Promise<PivotRow[]> {
 
-  const { owner, warehouses } = params
+  const { owner, wh_so } = params
 
   const { data, error } = await supabase
     .from('master_stock_nte')
