@@ -4,7 +4,7 @@ import { shortWH, OP_COLORS } from './masterData'
 
 export interface ExportData {
   rows:       any[]
-  warehouses: string[]
+  wh_so: string[]
   owner:   string
   area:       string
   tanggal:    string
