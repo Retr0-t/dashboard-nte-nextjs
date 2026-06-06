@@ -21,9 +21,18 @@ export default function ExportPage() {
     setExporting(key)
     try {
       const cfg  = AREA_CONFIG[ak]
-      const rows = await getLaporanHarian({ owner: cfg.owner, wh_so: cfg.warehouses })
-      if (!rows.length) { toast.error('Tidak ada data stok untuk ' + cfg.area); return }
-      const d = { rows, wh_so: cfg.warehouses, owner: cfg.owner, area: cfg.area, tanggal }
+     const rows = await getLaporanHarian({
+  owner: cfg.owner,
+  wh_so: cfg.warehouses
+})
+
+const d = {
+  rows,
+  wh_so: cfg.warehouses,
+  owner: cfg.owner,
+  area: cfg.area,
+  tanggal
+}
       if (fmt === 'pdf') await generatePDF(d)
       else               await generateJPG(d)
       toast.success(`✅ ${cfg.owner} ${cfg.area} berhasil di-export!`)
