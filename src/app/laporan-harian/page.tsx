@@ -75,7 +75,7 @@ function LaporanContent() {
     setExporting(fmt)
     try {
       const d = {
-        rows, warehouses: whs, operator: selOp, area: cfg.area,
+        rows, wh_so: whs, owner: selOp, area: cfg.area,
         tanggal: new Date().toISOString().split('T')[0]
       }
       if (fmt === 'pdf') await generatePDF(d)
