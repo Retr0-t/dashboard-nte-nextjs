@@ -4,8 +4,8 @@ import { shortWH, OP_COLORS } from './masterData'
 
 export interface ExportData {
   rows:       any[]
-  wh_so: string[]
-  owner:   string
+  warehouses: string[]
+  operator:   string
   area:       string
   tanggal:    string
 }
@@ -19,7 +19,7 @@ const OP_RGB: Record<string, [number,number,number]> = {
 export async function generatePDF(data: ExportData): Promise<void> {
   const jsPDF     = (await import('jspdf')).default
   const autoTable = (await import('jspdf-autotable')).default
-  const { rows, warehouses, owner, area, tanggal } = data
+  const { rows, warehouses, operator, area, tanggal } = data
   const rgb     = OP_RGB[operator] || [30, 58, 95]
   const shortWHs = warehouses.map(shortWH)
   const doc     = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' })
@@ -30,7 +30,7 @@ export async function generatePDF(data: ExportData): Promise<void> {
   doc.setFillColor(...rgb)
   doc.rect(0, 0, pageW, 22, 'F')
   doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(255,255,255)
-  doc.text(`STOCK NTE ${owner} — ${area}`, pageW/2, 10, { align:'center' })
+  doc.text(`STOCK NTE ${operator} — ${area}`, pageW/2, 10, { align:'center' })
   doc.setFontSize(8); doc.setFont('helvetica','normal')
   doc.text(`Tanggal: ${tanggal}  |  WH: ${warehouses.length}  |  ${new Date().toLocaleString('id-ID')}`, pageW/2, 17, { align:'center' })
 
@@ -90,7 +90,7 @@ export async function generatePDF(data: ExportData): Promise<void> {
 
 export async function generateJPG(data: ExportData): Promise<void> {
   const html2canvas = (await import('html2canvas')).default
-  const { rows, warehouses, owner, area, tanggal } = data
+  const { rows, warehouses, operator, area, tanggal } = data
   const rgb  = OP_RGB[operator] || [30,58,95]
   const hex  = `rgb(${rgb.join(',')})`
   const shortWHs = warehouses.map(shortWH)

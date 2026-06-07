@@ -7,7 +7,6 @@ import { generatePDF, generateJPG } from '@/lib/exportReport'
 import { FileDown, ImageDown, RefreshCw, Eye, EyeOff, Database } from 'lucide-react'
 import { Suspense } from 'react'
 import toast from 'react-hot-toast'
-
 import type { PivotRow } from '@/lib/supabase'
 
 function LaporanContent() {
@@ -23,8 +22,8 @@ function LaporanContent() {
   const [exporting, setExporting] = useState<'pdf'|'jpg'|null>(null)
 
   const opKeys = Object.entries(AREA_CONFIG)
-  .filter(([, v]) => v.owner === selOp)
-  .map(([k]) => k)
+    .filter(([, v]) => v.operator === selOp)
+    .map(([k]) => k)
 
   // Set default area key
   useEffect(() => {
@@ -37,7 +36,7 @@ function LaporanContent() {
     }
   }, [selOp, initArea])
 
-  const cfg = AREA_CONFIG[selKey] || { wh_so: [], area: '', owner: '' }
+  const cfg = AREA_CONFIG[selKey] || { warehouses: [], area: '', operator: '' }
   const whs = cfg.warehouses
   const col = OP_COLORS[selOp] || OP_COLORS['TELKOMSEL']
 
@@ -46,7 +45,7 @@ function LaporanContent() {
     if (!selOp || !selKey || !whs.length) return
     setLoading(true)
     try {
-      const data = await getLaporanHarian({ owner: selOp, wh_so: whs })
+      const data = await getLaporanHarian({ operator: selOp, warehouses: whs })
       setRows(data)
     } catch (e: any) {
       toast.error('Gagal memuat: ' + e.message)
@@ -75,7 +74,7 @@ function LaporanContent() {
     setExporting(fmt)
     try {
       const d = {
-        rows, wh_so: whs, owner: selOp, area: cfg.area,
+        rows, warehouses: whs, operator: selOp, area: cfg.area,
         tanggal: new Date().toISOString().split('T')[0]
       }
       if (fmt === 'pdf') await generatePDF(d)

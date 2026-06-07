@@ -21,21 +21,12 @@ export default function ExportPage() {
     setExporting(key)
     try {
       const cfg  = AREA_CONFIG[ak]
-     const rows = await getLaporanHarian({
-  owner: cfg.owner,
-  wh_so: cfg.warehouses
-})
-
-const d = {
-  rows,
-  wh_so: cfg.warehouses,
-  owner: cfg.owner,
-  area: cfg.area,
-  tanggal
-}
+      const rows = await getLaporanHarian({ operator: cfg.operator, warehouses: cfg.warehouses })
+      if (!rows.length) { toast.error('Tidak ada data stok untuk ' + cfg.area); return }
+      const d = { rows, warehouses: cfg.warehouses, operator: cfg.operator, area: cfg.area, tanggal }
       if (fmt === 'pdf') await generatePDF(d)
       else               await generateJPG(d)
-      toast.success(`✅ ${cfg.owner} ${cfg.area} berhasil di-export!`)
+      toast.success(`✅ ${cfg.operator} ${cfg.area} berhasil di-export!`)
     } catch (e: any) {
       toast.error('Error: ' + e.message)
     } finally { setExporting(null) }
@@ -53,15 +44,9 @@ const d = {
     toast.success(`Selesai! ${done} laporan di-export.`, { id: 'exp-all' })
   }
 
-  const lastSync = stats?.lastUpdated
-  ? formatDistanceToNow(
-      new Date(stats.lastUpdated),
-      {
-        addSuffix: true,
-        locale: id
-      }
-    )
-  : null
+  const lastSync = stats?.lastSyncedAt
+    ? formatDistanceToNow(new Date(stats.lastSyncedAt), { addSuffix: true, locale: id })
+    : null
 
   return (
     <div className="animate-fade-in">
@@ -102,7 +87,7 @@ const d = {
       {/* Per operator */}
       {ALL_OPERATORS.map(op => {
         const col    = OP_COLORS[op]
-        const opKeys = Object.keys(AREA_CONFIG).filter(k => AREA_CONFIG[k].owner === op)
+        const opKeys = Object.keys(AREA_CONFIG).filter(k => AREA_CONFIG[k].operator === op)
 
         return (
           <div key={op} className="mb-5">

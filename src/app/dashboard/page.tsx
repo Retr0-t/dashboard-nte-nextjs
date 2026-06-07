@@ -8,11 +8,6 @@ import { id } from 'date-fns/locale'
 import Link from 'next/link'
 
 export default function DashboardPage() {
-  const OWNER_MAP: Record<string, string> = {
-  TELKOMSEL: 'INV',
-  TELKOM: 'CCAN',
-  TIF: 'TIF'
-}
   const [stats,    setStats]    = useState<any>(null)
   const [coverage, setCoverage] = useState<any[]>([])
   const [loading,  setLoading]  = useState(true)
@@ -27,17 +22,12 @@ export default function DashboardPage() {
 
   useEffect(() => { load() }, [])
 
- const reportedSet = new Set(
-  coverage.map((r: any) => `${r.owner}|${r.wh_so}`)
-)
+  const reportedSet = new Set(coverage.map((r: any) => `${r.operator}|${r.warehouse}`))
   const totalWH = Object.values(AREA_CONFIG).reduce((s, v) => s + v.warehouses.length, 0)
 
- const lastSync = stats?.lastUpdated
-  ? formatDistanceToNow(new Date(stats.lastUpdated), {
-      addSuffix: true,
-      locale: id
-    })
-  : null
+  const lastSync = stats?.lastSyncedAt
+    ? formatDistanceToNow(new Date(stats.lastSyncedAt), { addSuffix: true, locale: id })
+    : null
 
   return (
     <div className="animate-fade-in">
@@ -96,7 +86,7 @@ export default function DashboardPage() {
         <div className="stat-card card-hover">
           <div className="flex items-start justify-between">
             <div className="stat-value text-sky-600">
-              {loading ? <div className="skeleton w-12 h-7" /> : stats?.owners?.length || '0'}
+              {loading ? <div className="skeleton w-12 h-7" /> : stats?.operators?.length || '0'}
             </div>
             <CheckCircle2 size={18} className="text-slate-300 mt-1" />
           </div>
@@ -122,9 +112,9 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         {ALL_OPERATORS.map(op => {
           const col = OP_COLORS[op]
-         const opKeys = Object.entries(AREA_CONFIG).filter(([, v]) => v.owner === op)
+          const opKeys = Object.entries(AREA_CONFIG).filter(([, v]) => v.operator === op)
           const opWH = opKeys.reduce((s, [, v]) => s + v.warehouses.length, 0)
-          const opReported = coverage.filter(   (r: any) => r.owner === OWNER_MAP[op] ).length
+          const opReported = coverage.filter((r: any) => r.operator === op).length
           const pct = opWH > 0 ? Math.round(opReported / opWH * 100) : 0
           const opTotal = stats?.totalUnits ? null : null // shown per operator below
 
@@ -150,7 +140,7 @@ export default function DashboardPage() {
 
               {/* Area rows */}
               {opKeys.map(([ak, cfg]) => {
-                const repCount = coverage.filter((r: any) => r.owner === OWNER_MAP[op] && cfg.warehouses.includes(r.wh_so)).length
+                const repCount = coverage.filter((r: any) => r.operator === op && cfg.warehouses.includes(r.warehouse)).length
                 const done = repCount === cfg.warehouses.length
                 return (
                   <div key={ak} className="flex items-center justify-between py-2 border-t border-slate-50">
@@ -187,13 +177,13 @@ export default function DashboardPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {Object.entries(AREA_CONFIG)
-                    .filter(([, v]) => v.owner === op)
+                    .filter(([, v]) => v.operator === op)
                     .map(([ak, cfg]) => (
                       <div key={ak} className="bg-slate-50 rounded-xl p-3">
                         <div className="text-xs font-semibold text-slate-600 mb-2">📍 {cfg.area}</div>
                         <div className="flex flex-wrap gap-1">
                           {cfg.warehouses.map(wh => {
-                            const ok = reportedSet.has(`${OWNER_MAP}|${wh}`)
+                            const ok = reportedSet.has(`${op}|${wh}`)
                             const sh = wh.replace(/TA SO (INV|CCAN|TIF) /,'').replace(/ WH$/,'')
                             return (
                               <span key={wh}
