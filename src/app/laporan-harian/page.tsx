@@ -211,8 +211,8 @@ function LaporanContent() {
                   let prevJenis = ''
                   let jenisRowSpanStart = 0
                   return rows.map((row, i) => {
-                    const isNewJenis = row.jenis_nte !== prevJenis
-                    prevJenis = row.jenis_nte
+                    const isNewJenis = row.jenis_2 !== prevJenis
+                    prevJenis = row.jenis_2
                     const whVals = whs.map(wh => (row[wh] as number) || 0)
                     const maxVal = Math.max(...whVals)
 
