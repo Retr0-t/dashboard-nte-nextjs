@@ -84,7 +84,7 @@ export async function getLaporanHarian(params: {
   const rows: PivotRow[] = []
 
   for (const [key, whCounts] of Object.entries(countMap)) {
-    const [jenis_nte, type_nte, status_nte] = key.split('||')
+    const [jenis_2, type, status_scmt] = key.split('||')
 
     const row: PivotRow = {
       jenis_2,
