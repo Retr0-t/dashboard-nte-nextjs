@@ -16,22 +16,51 @@ export default function ExportPage() {
 
   const tanggal = new Date().toISOString().split('T')[0]
 
-  const handleExport = async (ak: string, fmt: 'pdf' | 'jpg') => {
-    const key = `${ak}-${fmt}`
-    setExporting(key)
-    try {
-      const cfg  = AREA_CONFIG[ak]
-      const rows = await getLaporanHarian({ owner: cfg.operator, warehouses: cfg.warehouses })
-      if (!rows.length) { toast.error('Tidak ada data stok untuk ' + cfg.area); return }
-      const d = { rows, warehouses: cfg.warehouses, owner: cfg.operator, area: cfg.area, tanggal }
-      if (fmt === 'pdf') await generatePDF(d)
-      else               await generateJPG(d)
-      toast.success(`✅ ${cfg.operator} ${cfg.area} berhasil di-export!`)
-    } catch (e: any) {
-      toast.error('Error: ' + e.message)
-    } finally { setExporting(null) }
-  }
+  const handleExport = async (
+  ak: string,
+  fmt: 'pdf' | 'jpg'
+) => {
+  const key = `${ak}-${fmt}`
+  setExporting(key)
 
+  try {
+    const cfg = AREA_CONFIG[ak]
+
+    const rows = await getLaporanHarian({
+      owner: cfg.owner,
+      warehouses: cfg.warehouses
+    })
+
+    if (!rows.length) {
+      toast.error(
+        'Tidak ada data stok untuk ' + cfg.area
+      )
+      return
+    }
+
+    const d = {
+      rows,
+      warehouses: cfg.warehouses,
+      operator: cfg.owner,
+      area: cfg.area,
+      tanggal
+    }
+
+    if (fmt === 'pdf') {
+      await generatePDF(d)
+    } else {
+      await generateJPG(d)
+    }
+
+    toast.success(
+      `✅ ${cfg.owner} ${cfg.area} berhasil di-export!`
+    )
+  } catch (e: any) {
+    toast.error('Error: ' + e.message)
+  } finally {
+    setExporting(null)
+  }
+}
   const handleExportAll = async (fmt: 'pdf' | 'jpg') => {
     const keys = Object.keys(AREA_CONFIG)
     toast.loading(`Mengexport ${keys.length} laporan...`, { id: 'exp-all' })
