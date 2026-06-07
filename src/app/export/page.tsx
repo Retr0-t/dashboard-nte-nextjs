@@ -26,7 +26,7 @@ export default function ExportPage() {
       const d = { rows, warehouses: cfg.warehouses, owner: cfg.operator, area: cfg.area, tanggal }
       if (fmt === 'pdf') await generatePDF(d)
       else               await generateJPG(d)
-      toast.success(`✅ ${cfg.owner} ${cfg.area} berhasil di-export!`)
+      toast.success(`✅ ${cfg.operator} ${cfg.area} berhasil di-export!`)
     } catch (e: any) {
       toast.error('Error: ' + e.message)
     } finally { setExporting(null) }
