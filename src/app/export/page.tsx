@@ -23,7 +23,7 @@ export default function ExportPage() {
       const cfg  = AREA_CONFIG[ak]
       const rows = await getLaporanHarian({ owner: cfg.operator, wh_so: cfg.warehouses })
       if (!rows.length) { toast.error('Tidak ada data stok untuk ' + cfg.area); return }
-      const d = { rows, warehouses: cfg.warehouses, operator: cfg.operator, area: cfg.area, tanggal }
+      const d = { rows, wh_so: cfg.warehouses, owner: cfg.operator, area: cfg.area, tanggal }
       if (fmt === 'pdf') await generatePDF(d)
       else               await generateJPG(d)
       toast.success(`✅ ${cfg.owner} ${cfg.area} berhasil di-export!`)
