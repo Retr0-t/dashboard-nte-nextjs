@@ -64,7 +64,7 @@ export async function getLaporanHarian(params: {
   const countMap: Record<string, Record<string, number>> = {}
 
   for (const row of data) {
-    const wh = (row.wh_so || '').trim()
+    const wh = (row.warehouses || '').trim()
 
     const type = (row.type || '').trim()
     const status = normalizeStatus(row.status || '')
@@ -84,7 +84,7 @@ export async function getLaporanHarian(params: {
   const rows: PivotRow[] = []
 
   for (const [key, whCounts] of Object.entries(countMap)) {
-    const [jenis_2, type, status_scmt] = key.split('||')
+    const [jenis_2, type, status] = key.split('||')
 
     const row: PivotRow = {
       jenis_2,
@@ -117,7 +117,7 @@ export async function getDashboardStats() {
 
   const { data: opData } = await supabase
     .from('master_stok_nte')
-    .select('ownerr')
+    .select('owner')
     .not('owner', 'is', null)
 
   const { data: latest } = await supabase
