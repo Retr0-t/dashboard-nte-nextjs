@@ -46,64 +46,69 @@ function normalizeStatus(s: string): string {
 // Ambil semua unit dari master_stok_nte untuk 1 operator,
 // lalu COUNT per (jenis_nte, type_nte, status_nte, warehouse) → pivot
 export async function getLaporanHarian(params: {
-  operator:   string
+  operator: string
   warehouses: string[]
 }): Promise<PivotRow[]> {
   const { operator, warehouses } = params
 
   const { data, error } = await supabase
     .from('master_stok_nte')
-    .select('warehouse, jenis_nte, type_nte, status_nte')
+    .select('wh_so, jenis_nte, type_nte, status_nte')
     .eq('operator', operator)
-    .not('type_nte',  'is', null)
-    .not('warehouse', 'is', null)
+    .not('type_nte', 'is', null)
+    .not('wh_so', 'is', null)
 
   if (error) throw error
   if (!data?.length) return []
 
-  // COUNT per group
   const countMap: Record<string, Record<string, number>> = {}
 
   for (const row of data) {
-    const wh     = (row.warehouse  || '').trim()
-    const type   = (row.type_nte   || '').trim()
-    const status = normalizeStatus(row.status_nte || '')
-    const jenis  = (row.jenis_nte  || 'Lainnya').trim()
+    const wh = (row.wh_so || '').trim()
 
-    if (!wh || !type || !['NTE BARU', 'REFURBISH'].includes(status)) continue
+    const type = (row.type_nte || '').trim()
+    const status = normalizeStatus(row.status_nte || '')
+    const jenis = (row.jenis_nte || 'Lainnya').trim()
+
+    if (!wh || !type || !['NTE BARU', 'REFURBISH'].includes(status))
+      continue
 
     const key = `${jenis}||${type}||${status}`
-    if (!countMap[key]) countMap[key] = {}
+
+    if (!countMap[key])
+      countMap[key] = {}
+
     countMap[key][wh] = (countMap[key][wh] || 0) + 1
   }
 
-  // Build pivot
   const rows: PivotRow[] = []
+
   for (const [key, whCounts] of Object.entries(countMap)) {
     const [jenis_nte, type_nte, status_nte] = key.split('||')
-    const row: PivotRow = { jenis_nte, type_nte, status_nte, grand_total: 0 }
+
+    const row: PivotRow = {
+      jenis_nte,
+      type_nte,
+      status_nte,
+      grand_total: 0
+    }
+
     let grand = 0
+
     for (const wh of warehouses) {
       const v = whCounts[wh] || 0
       row[wh] = v
-      grand  += v
+      grand += v
     }
-    row.grand_total = grand
-    if (grand > 0) rows.push(row)
-  }
 
-  // Sort: jenis → type → NTE BARU dulu
-  rows.sort((a, b) => {
-    if (a.jenis_nte  !== b.jenis_nte)  return a.jenis_nte.localeCompare(b.jenis_nte)
-    if (a.type_nte   !== b.type_nte)   return a.type_nte.localeCompare(b.type_nte)
-    if (a.status_nte === 'NTE BARU')   return -1
-    if (b.status_nte === 'NTE BARU')   return  1
-    return 0
-  })
+    row.grand_total = grand
+
+    if (grand > 0)
+      rows.push(row)
+  }
 
   return rows
 }
-
 // ── getDashboardStats ───────────────────────────────────────────────────────
 export async function getDashboardStats() {
   const { count: total } = await supabase
