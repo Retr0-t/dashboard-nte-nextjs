@@ -56,7 +56,7 @@ function LaporanContent() {
   useEffect(() => { load() }, [load])
 
   const totalUnit  = rows.reduce((s, r) => s + r.grand_total, 0)
-  const totalTypes = Array.from(new Set(rows.map(r => r.type_nte))).length
+  const totalTypes = Array.from(new Set(rows.map(r => r.type))).length
   const whsWithData = whs.filter(wh => rows.some(r => ((r[wh] as number) || 0) > 0))
 
   // Heatmap color per cell
@@ -227,14 +227,14 @@ function LaporanContent() {
                         {/* STATUS */}
                         <td>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold
-                            ${row.status_nte === 'NTE BARU' ? 'badge-baru' : 'badge-refurbish'}`}>
-                            {row.status_nte === 'NTE BARU' ? 'NTE BARU' : 'REFURBISH'}
+                            ${row.status_scmt === 'NTE BARU' ? 'badge-baru' : 'badge-refurbish'}`}>
+                            {row.status_scmt === 'NTE BARU' ? 'NTE BARU' : 'REFURBISH'}
                           </span>
                         </td>
 
                         {/* TYPE */}
                         <td className="td-label text-[11px] font-mono pl-3 text-slate-700">
-                          {row.type_nte.replace(/_/g,' ')}
+                          {row.type.replace(/_/g,' ')}
                         </td>
 
                         {/* Per WH count */}
