@@ -141,15 +141,15 @@ export async function getDashboardStats() {
 export async function getWHCoverage(operator?: string) {
   let q = supabase
     .from('master_stok_nte')
-    .select('operator, warehouse')
-    .not('warehouse', 'is', null)
+    .select('operator, wh_so')
+    .not('wh_so', 'is', null)
 
   if (operator) q = q.eq('operator', operator)
 
   const { data } = await q
   const seen = new Set<string>()
   return (data || []).filter((r: any) => {
-    const k = `${r.operator}|${r.warehouse}`
+    const k = `${r.operator}|${r.wh_so}`
     if (seen.has(k)) return false
     seen.add(k); return true
   })
