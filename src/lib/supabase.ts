@@ -16,7 +16,7 @@ export interface MasterStokRow {
   wh_so:         string
   status_nte:    string
   jenis:         string
-  jenis_nte:     string
+  jenis_2  :     string
   merk:          string
   type_nte:      string
   sn:            string
