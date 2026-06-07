@@ -14,7 +14,7 @@ export interface MasterStokRow {
   witel:         string
   wh_code:       string
   wh_so:         string
-  status_nte:    string
+  status:        string
   jenis:         string
   jenis_2:       string
   merk:          string
@@ -22,7 +22,7 @@ export interface MasterStokRow {
   sn:            string
   status_scmt:   string
   tanggal_update:string
-  operator:      string
+  owner:         string
   synced_at:     string
 }
 
@@ -46,15 +46,15 @@ function normalizeStatus(s: string): string {
 // Ambil semua unit dari master_stok_nte untuk 1 operator,
 // lalu COUNT per (jenis_nte, type_nte, status_nte, warehouse) → pivot
 export async function getLaporanHarian(params: {
-  operator: string
+  owner: string
   warehouses: string[]
 }): Promise<PivotRow[]> {
-  const { operator, warehouses } = params
+  const { owner, wh_so } = params
 
   const { data, error } = await supabase
     .from('master_stok_nte')
-    .select('wh_so, jenis_2, type, status_scmt')
-    .eq('operator', operator)
+    .select('wh_so, jenis_2, type, status')
+    .eq('owner', owner)
     .not('type', 'is', null)
     .not('wh_so', 'is', null)
 
@@ -67,7 +67,7 @@ export async function getLaporanHarian(params: {
     const wh = (row.wh_so || '').trim()
 
     const type = (row.type || '').trim()
-    const status = normalizeStatus(row.status_scmt || '')
+    const status = normalizeStatus(row.status || '')
     const jenis = (row.jenis_2 || 'Lainnya').trim()
 
     if (!wh || !type || !['NTE BARU', 'REFURBISH'].includes(status))
@@ -89,13 +89,13 @@ export async function getLaporanHarian(params: {
     const row: PivotRow = {
       jenis_2,
       type,
-      status_scmt,
+      status,
       grand_total: 0
     }
 
     let grand = 0
 
-    for (const wh of warehouses) {
+    for (const wh of wh_so) {
       const v = whCounts[wh] || 0
       row[wh] = v
       grand += v
@@ -117,8 +117,8 @@ export async function getDashboardStats() {
 
   const { data: opData } = await supabase
     .from('master_stok_nte')
-    .select('operator')
-    .not('operator', 'is', null)
+    .select('ownerr')
+    .not('owner', 'is', null)
 
   const { data: latest } = await supabase
     .from('master_stok_nte')
@@ -127,29 +127,29 @@ export async function getDashboardStats() {
     .limit(1)
     .single()
 
-  const operators = Array.from(new Set((opData || []).map((r: any) => r.operator).filter(Boolean)))
+  const owner = Array.from(new Set((opData || []).map((r: any) => r.owner).filter(Boolean)))
 
   return {
     totalUnits:    total || 0,
-    operators,
+    owner,
     lastSyncedAt:  latest?.synced_at     || null,
     lastUpdatedAt: latest?.tanggal_update || null,
   }
 }
 
 // ── getWHCoverage ───────────────────────────────────────────────────────────
-export async function getWHCoverage(operator?: string) {
+export async function getWHCoverage(owner?: string) {
   let q = supabase
     .from('master_stok_nte')
-    .select('operator, wh_so')
+    .select('owner, wh_so')
     .not('wh_so', 'is', null)
 
-  if (operator) q = q.eq('operator', operator)
+  if (owner) q = q.eq('owner', owner)
 
   const { data } = await q
   const seen = new Set<string>()
   return (data || []).filter((r: any) => {
-    const k = `${r.operator}|${r.wh_so}`
+    const k = `${r.owner}|${r.wh_so}`
     if (seen.has(k)) return false
     seen.add(k); return true
   })
