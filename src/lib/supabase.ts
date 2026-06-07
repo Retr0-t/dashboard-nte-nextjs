@@ -16,9 +16,9 @@ export interface MasterStokRow {
   wh_so:         string
   status_nte:    string
   jenis:         string
-  jenis_2  :     string
+  jenis_2:       string
   merk:          string
-  type_nte:      string
+  type:          string
   sn:            string
   status_scmt:   string
   tanggal_update:string
@@ -27,9 +27,9 @@ export interface MasterStokRow {
 }
 
 export interface PivotRow {
-  jenis_nte:   string
-  type_nte:    string
-  status_nte:  string
+  jenis_2:   string
+  type:    string
+  status_scmt:  string
   grand_total: number
   [warehouse: string]: string | number
 }
@@ -53,9 +53,9 @@ export async function getLaporanHarian(params: {
 
   const { data, error } = await supabase
     .from('master_stok_nte')
-    .select('wh_so, jenis_nte, type_nte, status_nte')
+    .select('wh_so, jenis_2, type, status_scmt')
     .eq('operator', operator)
-    .not('type_nte', 'is', null)
+    .not('type', 'is', null)
     .not('wh_so', 'is', null)
 
   if (error) throw error
@@ -66,9 +66,9 @@ export async function getLaporanHarian(params: {
   for (const row of data) {
     const wh = (row.wh_so || '').trim()
 
-    const type = (row.type_nte || '').trim()
-    const status = normalizeStatus(row.status_nte || '')
-    const jenis = (row.jenis_nte || 'Lainnya').trim()
+    const type = (row.type || '').trim()
+    const status = normalizeStatus(row.status_scmt || '')
+    const jenis = (row.jenis_2 || 'Lainnya').trim()
 
     if (!wh || !type || !['NTE BARU', 'REFURBISH'].includes(status))
       continue
@@ -87,9 +87,9 @@ export async function getLaporanHarian(params: {
     const [jenis_nte, type_nte, status_nte] = key.split('||')
 
     const row: PivotRow = {
-      jenis_nte,
-      type_nte,
-      status_nte,
+      jenis_2,
+      type,
+      status_scmt,
       grand_total: 0
     }
 
