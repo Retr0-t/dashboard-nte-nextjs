@@ -13,7 +13,7 @@ export interface MasterStokRow {
   reg:           string
   witel:         string
   wh_code:       string
-  wh_so:     string
+  wh_so:         string
   status_nte:    string
   jenis:         string
   jenis_nte:     string
