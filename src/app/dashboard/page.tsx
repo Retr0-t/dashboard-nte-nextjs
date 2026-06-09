@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { getDashboardStats, getWHCoverage } from '@/lib/supabase'
-import { AREA_CONFIG, ALL_OPERATORS, OP_COLORS, OP_TO_OWNER, OWNER_TO_OP } from '@/lib/masterData'
+import { AREA_CONFIG, ALL_OPERATORS, OP_COLORS, OP_TO_OWNER,  } from '@/lib/masterData'
 import { Package, Building2, CheckCircle2, AlertCircle, Clock, RefreshCw, Database } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { id } from 'date-fns/locale'
