@@ -3,11 +3,7 @@
 // warehouses = nilai field wh_so di tabel master_stock_nte
 
 
-export const OP_TO_OWNER: Record<string, string> = {
-  TELKOMSEL: 'TELKOMSEL',
-  TELKOM: 'TELKOM',
-  TIF: 'TELKOM AKSES',
-}
+
 export const OP_TO_OWNER: Record<string, string> = {
   TELKOMSEL: 'TELKOMSEL',
   TELKOM:    'TELKOM',
