@@ -7,7 +7,7 @@
 export const OP_TO_OWNER: Record<string, string> = {
   TELKOMSEL: 'TELKOMSEL',
   TELKOM:    'TELKOM',
-  TIF:       'TELKOM_AKSES',
+  TIF:       'TELKOM AKSES',
 }
 
 // Key = "OWNER|WITEL" sesuai nilai di DB
@@ -17,7 +17,7 @@ export const AREA_CONFIG: Record<string, {
   witel:      string
   warehouses: string[]  // nilai wh_so di DB
 }> = {
-  'INV|BANDUNG': {
+  'TELKOMSEL|BANDUNG': {
     owner: 'TELKOMSEL', operator: 'TELKOMSEL', witel: 'BANDUNG',
     warehouses: [
       'TA SO INV AHMAD YANI WH',
@@ -34,7 +34,7 @@ export const AREA_CONFIG: Record<string, {
       'TA SO INV UJUNG BERUNG WH',
     ],
   },
-  'INV|SOREANG': {
+  'TELKOMSEL|SOREANG': {
     owner: 'TELKOMSEL', operator: 'TELKOMSEL', witel: 'SOREANG',
     warehouses: [
       'TA SO INV KADIPATEN WH',
@@ -44,7 +44,7 @@ export const AREA_CONFIG: Record<string, {
       'TA SO INV MAJALENGKA WH',
     ],
   },
-  'CCAN|BANDUNG': {
+  'TELKOM|BANDUNG': {
     owner: 'TELKOM', operator: 'TELKOM', witel: 'BANDUNG',
     warehouses: [
       'TA SO CCAN AHMAD YANI WH',
@@ -62,7 +62,7 @@ export const AREA_CONFIG: Record<string, {
       'TA WITEL CCAN JABAR TENGAH (BANDUNG) WH',
     ],
   },
-  'CCAN|SOREANG': {
+  'TELKOM|SOREANG': {
     owner: 'TELKOM', operator: 'TELKOM', witel: 'SOREANG',
     warehouses: [
       'TA SO CCAN SUMEDANG WH',
@@ -73,8 +73,8 @@ export const AREA_CONFIG: Record<string, {
       'TA WITEL CCAN BANDUNG BARAT WH',
     ],
   },
-  'TIF|BANDUNG': {
-    owner: 'TELKOM_AKSES', operator: 'TIF', witel: 'BANDUNG',
+  'TELKOM AKSES|BANDUNG': {
+    owner: 'TELKOM AKSES', operator: 'TIF', witel: 'BANDUNG',
     warehouses: [
       'TA SO TIF BANDUNG CENTRIUM WH',
       'TA SO TIF CIJAURA WH',
@@ -83,8 +83,8 @@ export const AREA_CONFIG: Record<string, {
       'TA SO TIF KOPO WH',
     ],
   },
-  'TIF|SOREANG': {
-    owner: 'TELKOM_AKSES', operator: 'TIF', witel: 'SOREANG',
+  'TELKOM AKSES|SOREANG': {
+    owner: 'TELKOM AKSES', operator: 'TIF', witel: 'SOREANG',
     warehouses: [
       'TA SO TIF KADIPATEN WH',
       'TA SO TIF MAJALENGKA WH',
@@ -94,7 +94,7 @@ export const AREA_CONFIG: Record<string, {
 }
 
 export const ALL_OPERATORS: string[] = ['TELKOMSEL', 'TELKOM', 'TIF']
-export const ALL_OWNERS:    string[] = ['TELKOMSEL', 'TELKOM', 'TELKOM_AKSES']
+export const ALL_OWNERS:    string[] = ['TELKOMSEL', 'TELKOM', 'TELKOM AKSES']
 export const ALL_WITELS:    string[] = ['BANDUNG', 'SOREANG']
 
 export function getAreaKeys(operator?: string): string[] {
