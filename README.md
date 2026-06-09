@@ -1,88 +1,93 @@
 # NTE Dashboard v2.0
-**Sistem Pelaporan Stok Harian Network Terminal Environment**
-Telkom Indonesia · Bandung & Soreang · Operator: Telkomsel, Telkom, TIF
+Sistem Pelaporan Stok Harian NTE · Telkom Indonesia
+Bandung & Soreang · Operator: TELKOMSEL (INV), TELKOM (CCAN), TIF
 
 ---
 
 ## Stack
-| Layer | Teknologi |
-|-------|-----------|
+| Layer    | Teknologi |
+|----------|-----------|
 | Frontend | Next.js 14 + TypeScript + Tailwind CSS |
-| Database | Supabase (PostgreSQL) |
-| Sync | Google Apps Script (onEdit + daily) |
-| Export | jsPDF + html2canvas |
-| Deploy | Vercel |
+| Database | Supabase · tabel `master_stock_nte` |
+| Sync     | Google Apps Script (onEdit + daily 06:00 WIB) |
+| Export   | jsPDF + html2canvas |
+| Deploy   | Vercel |
 
 ---
 
-## Setup (urutan wajib)
+## Struktur database (Supabase)
 
-### 1. Supabase
-1. Buat project di [supabase.com](https://supabase.com)
-2. SQL Editor → paste & run `supabase_schema.sql`
-3. Catat **URL** dan **anon key** dari Settings → API
+Tabel: `master_stock_nte`
 
-### 2. Environment variables
+| Field | Keterangan |
+|-------|-----------|
+| `sn` | Serial Number — primary key unik per unit |
+| `owner` | **INV** = TELKOMSEL · **CCAN** = TELKOM · **TIF** = TIF |
+| `witel` | BANDUNG / SOREANG (difilter dengan ILIKE) |
+| `wh_so` | Nama WH SO sesuai SCMT |
+| `jenis_2` | Jenis 2: ONT DUAL BAND, STB, ORBIT, dll |
+| `type` | Type NTE: ONT_FIBERHOME_HG6145D2, dll |
+| `status` | NTE BARU / REFURBISH |
+
+Laporan harian = `COUNT(*) GROUP BY (wh_so × jenis_2 × type × status)` WHERE `owner = 'INV'`
+
+---
+
+## Setup
+
+### 1. Clone & install
 ```bash
+npm install
 cp .env.example .env.local
 # Isi NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY
 ```
 
-### 3. Install & run
+### 2. Jalankan lokal
 ```bash
-npm install
 npm run dev
-# Buka http://localhost:3000
+# http://localhost:3000
 ```
 
-### 4. Deploy ke Vercel
+### 3. Deploy Vercel
 ```bash
 vercel
-# Tambahkan env vars di Vercel Dashboard:
+# Tambah env vars di Vercel Dashboard:
 # NEXT_PUBLIC_SUPABASE_URL
 # NEXT_PUBLIC_SUPABASE_ANON_KEY
 # SUPABASE_SERVICE_ROLE_KEY
 # GSHEET_SYNC_SECRET
 ```
 
-### 5. Setup G-Sheet Sync
-1. Buka G-Sheet → Extensions → Apps Script
-2. Paste isi `NTE_Sync_AppsScript.js`
-3. Isi `CONFIG` (SUPABASE_URL, SUPABASE_KEY, NEXTJS_API_URL)
-4. Jalankan `setupTriggers()` → authorize → selesai
+### 4. Setup G-Sheet Sync
+1. G-Sheet → Extensions → Apps Script
+2. Paste `NTE_Sync_AppsScript.js`
+3. Isi `CONFIG`: SUPABASE_URL, SUPABASE_KEY, TABLE_NAME = `master_stock_nte`
+4. Jalankan `setupTriggers()` sekali → authorize → selesai
 
 ---
 
 ## Halaman
 | Route | Keterangan |
 |-------|-----------|
-| `/dashboard` | Overview stok + coverage WH semua operator |
-| `/laporan-harian` | Pivot table stok NTE per operator-area (dari Supabase) |
+| `/dashboard` | Overview + KPI + coverage WH semua operator |
+| `/laporan-harian` | Pivot tabel mirip G-Sheet laporan (dari Supabase) |
 | `/rekap` | Rekap semua operator-area sekaligus |
-| `/export` | Download PDF & JPG laporan |
-| `/gsheet` | Status sync G-Sheet + panduan setup |
-| `/master` | Daftar warehouse & info sistem |
-
----
-
-## Cara kerja laporan harian
-```
-G-Sheet (1 baris = 1 unit NTE dengan SN unik)
-    ↓ Apps Script onEdit / daily 06:00 WIB
-master_stok_nte (Supabase)
-    ↓ COUNT(*) GROUP BY (warehouse × type_nte × status_nte)
-Laporan Harian (pivot table identik dengan G-Sheet laporan)
-```
+| `/export` | Download PDF & JPG |
+| `/gsheet` | Status sync + panduan setup |
+| `/master` | Daftar WH, owner mapping, info sistem |
 
 ---
 
 ## Edit warehouse
-Edit `src/lib/masterData.ts` bagian `AREA_CONFIG`:
+File: `src/lib/masterData.ts`
 ```ts
-"TELKOMSEL - BANDUNG": {
+'INV|BANDUNG': {
+  owner: 'INV',       // nilai field owner di DB
+  operator: 'TELKOMSEL',
+  witel: 'BANDUNG',   // dipakai untuk filter ILIKE
   warehouses: [
-    "TA SO INV AHMAD YANI WH",
-    "TA SO INV WH BARU",  // ← tambah di sini
+    'TA SO INV AHMAD YANI WH',  // nilai field wh_so di DB
+    // tambah WH baru di sini
   ]
 }
 ```

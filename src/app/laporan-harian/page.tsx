@@ -1,65 +1,67 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { getLaporanHarian } from '@/lib/supabase'
-import { AREA_CONFIG, ALL_OPERATORS, OP_COLORS, shortWH } from '@/lib/masterData'
+import { getLaporanHarian, getDashboardStats } from '@/lib/supabase'
+import { AREA_CONFIG, ALL_OPERATORS, OP_COLORS, OP_TO_OWNER, shortWH } from '@/lib/masterData'
 import { generatePDF, generateJPG } from '@/lib/exportReport'
-import { FileDown, ImageDown, RefreshCw, Eye, EyeOff, Database } from 'lucide-react'
+import { FileDown, ImageDown, RefreshCw, Eye, EyeOff, Database, AlertCircle } from 'lucide-react'
 import { Suspense } from 'react'
+import { formatDistanceToNow } from 'date-fns'
+import { id } from 'date-fns/locale'
 import toast from 'react-hot-toast'
-import type { PivotRow } from '@/lib/supabase'
+
+interface PivotRow {
+  jenis_2: string; type: string; status: string; grand_total: number
+  [wh: string]: string | number
+}
 
 function LaporanContent() {
-  const params   = useSearchParams()
-  const initOp   = params.get('op')   || ALL_OPERATORS[0]
-  const initArea = params.get('area') || ''
+  const params     = useSearchParams()
+  const initOp     = params.get('op')    || ALL_OPERATORS[0]
+  const initWitel  = params.get('witel') || 'BANDUNG'
 
-  const [selOp,  setSelOp]  = useState<string>(initOp)
-  const [selKey, setSelKey] = useState<string>('')
-  const [rows,   setRows]   = useState<PivotRow[]>([])
-  const [loading, setLoading]  = useState(false)
-  const [heatmap, setHeatmap]  = useState(true)
+  const [selOp,    setSelOp]    = useState<string>(initOp)
+  const [selWitel, setSelWitel] = useState<string>(initWitel)
+  const [rows,     setRows]     = useState<PivotRow[]>([])
+  const [stats,    setStats]    = useState<any>(null)
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState<string | null>(null)
+  const [heatmap,  setHeatmap]  = useState(true)
   const [exporting, setExporting] = useState<'pdf'|'jpg'|null>(null)
 
-  const opKeys = Object.entries(AREA_CONFIG)
-    .filter(([, v]) => v.owner === selOp)
-    .map(([k]) => k)
+  // area key = "OWNER|WITEL"
+  const owner    = OP_TO_OWNER[selOp] || 'INV'
+  const areaKey  = `${owner}|${selWitel}`
+  const cfg      = AREA_CONFIG[areaKey]
+  const whs      = cfg?.warehouses || []
+  const col      = OP_COLORS[selOp] || OP_COLORS['TELKOMSEL']
 
-  // Set default area key
+  // Load stats once
   useEffect(() => {
-    if (!opKeys.length) return
-    if (initArea) {
-      const found = opKeys.find(k => AREA_CONFIG[k].area === initArea)
-      setSelKey(found || opKeys[0])
-    } else if (!opKeys.includes(selKey)) {
-      setSelKey(opKeys[0])
-    }
-  }, [selOp, initArea])
+    getDashboardStats().then(setStats).catch(() => {})
+  }, [])
 
-  const cfg = AREA_CONFIG[selKey] || { warehouses: [], area: '', owner: '' }
-  const whs = cfg.warehouses
-  const col = OP_COLORS[selOp] || OP_COLORS['TELKOMSEL']
-
-  // Load pivot data
+  // Load laporan
   const load = useCallback(async () => {
-    if (!selOp || !selKey || !whs.length) return
+    if (!owner || !whs.length) return
     setLoading(true)
+    setError(null)
     try {
-      const data = await getLaporanHarian({ owner: selOp, wh_so: whs })
+      const data = await getLaporanHarian({ owner, wh_so: whs })
       setRows(data)
     } catch (e: any) {
-      toast.error('Gagal memuat: ' + e.message)
+      setError(e.message)
+      toast.error('Gagal memuat data: ' + e.message)
       setRows([])
     } finally { setLoading(false) }
-  }, [selOp, selKey])
+  }, [owner, areaKey])
 
   useEffect(() => { load() }, [load])
 
-  const totalUnit  = rows.reduce((s, r) => s + r.grand_total, 0)
-  const totalTypes = Array.from(new Set(rows.map(r => r.type))).length
+  const totalUnit   = rows.reduce((s, r) => s + r.grand_total, 0)
+  const totalTypes  = Array.from(new Set(rows.map(r => r.type))).length
   const whsWithData = whs.filter(wh => rows.some(r => ((r[wh] as number) || 0) > 0))
 
-  // Heatmap color per cell
   const heat = (val: number, max: number) => {
     if (!heatmap || val === 0) return ''
     const r = max > 0 ? val / max : 0
@@ -74,8 +76,9 @@ function LaporanContent() {
     setExporting(fmt)
     try {
       const d = {
-        rows, wh_so: whs, owner: selOp, area: cfg.area,
-        tanggal: new Date().toISOString().split('T')[0]
+        rows, warehouses: whs,
+        operator: selOp, area: selWitel,
+        tanggal: new Date().toISOString().split('T')[0],
       }
       if (fmt === 'pdf') await generatePDF(d)
       else               await generateJPG(d)
@@ -83,14 +86,19 @@ function LaporanContent() {
     finally { setExporting(null) }
   }
 
+  const lastUpdated = stats?.lastUpdated
+    ? formatDistanceToNow(new Date(stats.lastUpdated), { addSuffix: true, locale: id })
+    : null
+
   return (
     <div className="animate-fade-in">
+
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3 mb-5">
         <div>
           <h1 className="page-title">Laporan Harian</h1>
           <p className="page-subtitle">
-            Stok dihitung otomatis dari unit fisik di G-Sheet · 1 unit = 1 baris G-Sheet
+            Stok dihitung otomatis dari unit fisik di Supabase · 1 baris = 1 unit NTE
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -100,7 +108,8 @@ function LaporanContent() {
           <button onClick={load} disabled={loading} className="btn-secondary text-xs">
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''}/> Refresh
           </button>
-          <button onClick={() => handleExport('pdf')} disabled={exporting !== null} className="btn-secondary text-xs">
+          <button onClick={() => handleExport('pdf')} disabled={exporting !== null}
+            className="btn-secondary text-xs">
             <FileDown size={13}/> {exporting==='pdf' ? 'PDF...' : 'PDF'}
           </button>
           <button onClick={() => handleExport('jpg')} disabled={exporting !== null}
@@ -110,39 +119,66 @@ function LaporanContent() {
         </div>
       </div>
 
-      {/* Filter bar */}
+      {/* Supabase status */}
+      {stats && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs">
+          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+          <span className="text-emerald-700 font-semibold">
+            {stats.totalUnits?.toLocaleString('id')} unit di Supabase
+          </span>
+          {lastUpdated && (
+            <span className="text-emerald-600">· Update {lastUpdated}</span>
+          )}
+          <span className="ml-auto text-emerald-500 font-mono text-[10px]">
+            master_stock_nte · owner={owner}
+          </span>
+        </div>
+      )}
+
+      {/* Filter */}
       <div className="card p-4 mb-4 flex flex-wrap items-center gap-3">
-        {/* Operator tabs */}
+        {/* Operator */}
         <div className="flex gap-1">
           {ALL_OPERATORS.map(op => (
             <button key={op} onClick={() => setSelOp(op)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all
-                ${selOp === op ? 'text-white border-transparent' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                ${selOp === op
+                  ? 'text-white border-transparent'
+                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
               style={selOp === op ? { background: OP_COLORS[op]?.bg } : {}}>
               {op}
             </button>
           ))}
         </div>
 
-        {/* Area select */}
-        <select className="input-base w-40" value={selKey} onChange={e => setSelKey(e.target.value)}>
-          {opKeys.map(k => (
-            <option key={k} value={k}>{AREA_CONFIG[k].area}</option>
+        {/* Area (Bandung / Soreang) */}
+        <div className="flex gap-1">
+          {['BANDUNG','SOREANG'].map(w => (
+            <button key={w} onClick={() => setSelWitel(w)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all
+                ${selWitel === w
+                  ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]'
+                  : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+              {w}
+            </button>
           ))}
-        </select>
+        </div>
 
         <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
-          <Database size={12}/> Sumber: master_stok_nte (Supabase)
+          <Database size={12}/>
+          <span>owner: <code className="font-mono bg-slate-100 px-1 rounded">{owner}</code></span>
+          <span className="text-slate-300">·</span>
+          <span>{whs.length} WH terdaftar</span>
         </div>
       </div>
 
       {/* KPI strip */}
       <div className="flex gap-3 mb-4 flex-wrap">
         {[
-          { label: 'Grand Total',   value: loading ? '…' : totalUnit.toLocaleString('id') + ' unit' },
-          { label: 'Type NTE',      value: loading ? '…' : String(totalTypes) },
-          { label: 'WH Ada Stok',   value: loading ? '…' : `${whsWithData.length}/${whs.length}` },
-          { label: 'Area',          value: `${selOp} — ${cfg.area}` },
+          { label: 'Grand Total',  value: loading ? '…' : totalUnit.toLocaleString('id') + ' unit' },
+          { label: 'Type NTE',     value: loading ? '…' : String(totalTypes) },
+          { label: 'WH Ada Stok', value: loading ? '…' : `${whsWithData.length}/${whs.length}` },
+          { label: 'Operator',    value: `${selOp} — ${selWitel}` },
         ].map(({ label, value }) => (
           <div key={label} className="bg-white rounded-xl border border-slate-200 px-4 py-2 flex items-center gap-2">
             <span className="text-xs text-slate-400">{label}</span>
@@ -151,55 +187,68 @@ function LaporanContent() {
         ))}
       </div>
 
+      {/* Error state */}
+      {error && (
+        <div className="mb-4 flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+          <AlertCircle size={16} className="shrink-0 mt-0.5"/>
+          <div>
+            <div className="font-semibold">Gagal mengambil data dari Supabase</div>
+            <div className="text-xs mt-0.5 font-mono">{error}</div>
+            <div className="text-xs mt-1 text-red-500">
+              Pastikan tabel <code>master_stock_nte</code> ada dan env vars sudah benar.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Report table */}
       <div className="card overflow-hidden">
-        {/* Title bar — mirip header G-Sheet */}
+        {/* Title bar */}
         <div className="px-5 py-3.5 flex items-center justify-between"
           style={{ background: col.bg }}>
           <div className="text-white font-display font-bold text-sm tracking-wide uppercase">
-            STOCK NTE {selOp} {cfg.area}
+            STOCK NTE {selOp} {selWitel}
           </div>
           <div className="text-white/60 text-xs">
             {new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' })}
           </div>
         </div>
 
-        {/* Sub-header row */}
-        <div className="grid text-[10px] font-semibold text-slate-500 uppercase tracking-widest
-          border-b border-slate-200 bg-slate-50"
-          style={{ gridTemplateColumns: '160px 90px 1fr' }}>
-          <div className="px-3 py-2 border-r border-slate-200">COUNTA of SN</div>
-          <div className="px-3 py-2 border-r border-slate-200" />
-          <div className="px-3 py-2" style={{ color: col.bg }}>WH SO (SESUAI SCMT)</div>
+        {/* Sub-header */}
+        <div className="flex text-[10px] font-semibold text-slate-400 uppercase tracking-widest bg-slate-50 border-b border-slate-200">
+          <div className="px-3 py-2 border-r border-slate-200 min-w-[160px]">COUNTA of SN</div>
+          <div className="px-3 py-2 flex-1" style={{ color: col.bg }}>WH SO (SESUAI SCMT)</div>
         </div>
 
         {loading ? (
           <div className="p-16 text-center">
             <RefreshCw size={28} className="animate-spin text-slate-300 mx-auto mb-3"/>
             <p className="text-slate-400 text-sm">Menghitung stok dari Supabase...</p>
+            <p className="text-slate-300 text-xs mt-1">
+              Query: master_stock_nte WHERE owner='{owner}'
+            </p>
           </div>
-        ) : rows.length === 0 ? (
+        ) : rows.length === 0 && !error ? (
           <div className="p-16 text-center">
             <Database size={32} className="text-slate-200 mx-auto mb-3"/>
-            <p className="text-slate-400 text-sm">
-              Belum ada data untuk <strong>{selOp} {cfg.area}</strong>
+            <p className="text-slate-400 text-sm font-medium">
+              Tidak ada data untuk <strong>{selOp} {selWitel}</strong>
             </p>
-            <p className="text-xs text-slate-300 mt-1">Pastikan G-Sheet sudah di-sync via Apps Script</p>
-            <a href="/gsheet" className="text-[#2E6DA4] text-xs underline mt-2 inline-block">
-              Setup G-Sheet Sync →
-            </a>
+            <p className="text-xs text-slate-300 mt-1">
+              owner=<code>{owner}</code> · witel LIKE %{selWitel}%
+            </p>
           </div>
-        ) : (
+        ) : !error && (
           <div className="overflow-auto">
             <table className="lap-table sticky-header"
-              style={{ minWidth: `${240 + 200 + whs.length * 80 + 80}px` }}>
+              style={{ minWidth: `${260 + 200 + whs.length * 78 + 80}px` }}>
               <thead>
                 <tr>
-                  <th className="text-left w-40" style={{ background: '#0D2137' }}>JENIS 2</th>
-                  <th className="w-24" style={{ background: '#0D2137' }}>STATUS</th>
+                  <th className="text-left w-44" style={{ background: '#0D2137' }}>JENIS 2</th>
+                  <th className="w-28" style={{ background: '#0D2137' }}>STATUS</th>
                   <th className="text-left" style={{ background: '#0D2137', minWidth: '200px' }}>TYPE</th>
                   {whs.map(wh => (
-                    <th key={wh} style={{ background: col.bg, fontSize: '9px', width: '72px' }}>
+                    <th key={wh} style={{ background: col.bg, fontSize: '9px', width: '75px' }}>
                       {shortWH(wh)}
                     </th>
                   ))}
@@ -209,35 +258,34 @@ function LaporanContent() {
               <tbody>
                 {(() => {
                   let prevJenis = ''
-                  let jenisRowSpanStart = 0
                   return rows.map((row, i) => {
-                    const isNewJenis = row.jenis_2 !== prevJenis
-                    prevJenis = row.jenis_2
-                    const whVals = whs.map(wh => (row[wh] as number) || 0)
-                    const maxVal = Math.max(...whVals)
+                    const isNew  = row.jenis_2 !== prevJenis
+                    prevJenis    = row.jenis_2
+                    const vals   = whs.map(wh => (row[wh] as number) || 0)
+                    const maxVal = Math.max(...vals, 1)
 
                     return (
-                      <tr key={i}>
+                      <tr key={i} className="hover:bg-slate-50/60 transition-colors">
                         {/* JENIS 2 */}
                         <td className={`td-label text-[11px] pl-3
-                          ${isNewJenis ? 'font-bold text-[#1E3A5F] bg-[#EBF2FA]' : 'text-transparent'}`}>
-                          {isNewJenis ? row.jenis_nte : ''}
+                          ${isNew ? 'font-bold text-[#1E3A5F] bg-[#EBF2FA]' : 'text-slate-200'}`}>
+                          {isNew ? row.jenis_2 : ''}
                         </td>
 
                         {/* STATUS */}
                         <td>
                           <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold
-                            ${row.status_scmt === 'NTE BARU' ? 'badge-baru' : 'badge-refurbish'}`}>
-                            {row.status_scmt === 'NTE BARU' ? 'NTE BARU' : 'REFURBISH'}
+                            ${row.status === 'NTE BARU' ? 'badge-baru' : 'badge-refurbish'}`}>
+                            {row.status}
                           </span>
                         </td>
 
                         {/* TYPE */}
                         <td className="td-label text-[11px] font-mono pl-3 text-slate-700">
-                          {row.type.replace(/_/g,' ')}
+                          {row.type}
                         </td>
 
-                        {/* Per WH count */}
+                        {/* Per WH */}
                         {whs.map(wh => {
                           const val = (row[wh] as number) || 0
                           return (
@@ -259,20 +307,18 @@ function LaporanContent() {
 
                 {/* Grand Total row */}
                 <tr className="sticky bottom-0">
-                  <td colSpan={3} className="td-label font-bold text-xs text-white py-2.5 pl-4"
-                    style={{ background: '#1E3A5F' }}>
+                  <td colSpan={3} className="td-label font-bold text-xs text-white py-2.5 pl-4 bg-[#1E3A5F]">
                     Grand Total
                   </td>
                   {whs.map(wh => {
                     const t = rows.reduce((s, r) => s + ((r[wh] as number) || 0), 0)
                     return (
-                      <td key={wh} className="text-xs font-bold text-white"
-                        style={{ background: '#2E6DA4' }}>
+                      <td key={wh} className="text-xs font-bold text-white bg-[#2E6DA4]">
                         {t > 0 ? t.toLocaleString('id') : ''}
                       </td>
                     )
                   })}
-                  <td className="text-sm font-bold text-white" style={{ background: '#C0392B' }}>
+                  <td className="text-sm font-bold text-white bg-[#C0392B]">
                     {totalUnit.toLocaleString('id')}
                   </td>
                 </tr>
@@ -290,7 +336,9 @@ function LaporanContent() {
             return (
               <div key={wh}
                 className={`text-xs rounded-lg px-3 py-1.5 border font-medium
-                  ${tot > 0 ? 'bg-white border-slate-200 text-slate-700' : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
+                  ${tot > 0
+                    ? 'bg-white border-slate-200 text-slate-700'
+                    : 'bg-slate-50 border-slate-100 text-slate-300'}`}>
                 {shortWH(wh)}: {tot > 0 ? tot.toLocaleString('id') : '–'}
               </div>
             )
