@@ -63,7 +63,7 @@ export const AREA_CONFIG: Record<string, {
       'TA SO CCAN RAJAWALI WH',
       'TA SO CCAN SINDANGLAYA WH',
       'TA SO CCAN UJUNG BERUNG WH',
-      'TA WITEL CCAN JABAR TENGAH (BANDUNG) WH,
+      'TA WITEL CCAN JABAR TENGAH (BANDUNG) WH',
     ],
   },
   'CCAN|SOREANG': {
@@ -74,7 +74,7 @@ export const AREA_CONFIG: Record<string, {
       'TA SO CCAN MAJALAYA WH',
       'TA SO CCAN KADIPATEN WH',
       'TA SO CCAN MAJALENGKA WH',
-      'TA WITEL CCAN BANDUNG BARAT WH,
+      'TA WITEL CCAN BANDUNG BARAT WH',
     ],
   },
   'TIF|BANDUNG': {
@@ -84,7 +84,7 @@ export const AREA_CONFIG: Record<string, {
       'TA SO TIF CIJAURA WH',
       'TA SO TIF GEGERKALONG WH',
       'TA SO TIF UJUNGBERUNG WH',
-      'TA SO TIF KOPO WH'
+      'TA SO TIF KOPO WH',
     ],
   },
   'TIF|SOREANG': {
