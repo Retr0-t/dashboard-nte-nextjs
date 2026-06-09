@@ -144,15 +144,24 @@ export async function getWHCoverage(owner?: string) {
     .from('master_stock_nte')
     .select('owner, wh_so')
     .not('wh_so', 'is', null)
+
   if (owner) q = q.eq('owner', owner)
 
   const { data } = await q
+
   const seen = new Set<string>()
-  return (data || []).filter((r: any) => {
-    const k = `${r.owner}|${r.wh_so}`
-    if (seen.has(k)) return false
-    seen.add(k); return true
-  })
+
+  return (data || [])
+    .map((r: any) => ({
+      owner: (r.owner || '').trim(),
+      wh_so: (r.wh_so || '').trim(),
+    }))
+    .filter((r: any) => {
+      const k = `${r.owner}|${r.wh_so}`
+      if (seen.has(k)) return false
+      seen.add(k)
+      return true
+    })
 }
 
 /* ==========================================================
