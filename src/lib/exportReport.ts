@@ -126,9 +126,9 @@ export async function generateJPG(data: ExportData): Promise<void> {
           return `<tr style="background:${bg}">
             <td style="padding:4px 8px;border:1px solid #e2eaf2;font-weight:${jenis?'bold':'normal'};color:#1e3a5f;background:${jenis?'#ebf2fa':bg}">${jenis}</td>
             <td style="padding:4px;border:1px solid #e2eaf2;text-align:center">
-              <span style="background:${sBg};color:${sTxt};padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600">${r.status_nte==='NTE BARU'?'BARU':'RFBSH'}</span>
+              <span style="background:${sBg};color:${sTxt};padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600">${r.status==='NTE BARU'?'BARU':'RFBSH'}</span>
             </td>
-            <td style="padding:4px 8px;border:1px solid #e2eaf2;font-family:monospace;font-size:10px">${r.type_nte.replace(/_/g,' ')}</td>
+            <td style="padding:4px 8px;border:1px solid #e2eaf2;font-family:monospace;font-size:10px">${r.type.replace(/_/g,' ')}</td>
             ${warehouses.map(wh=>{const v=(r[wh]||0) as number;return`<td style="padding:4px;border:1px solid #e2eaf2;text-align:center;background:${v>0?'#f0fdf4':bg};color:${v>0?'#166534':'#ccc'}">${v>0?v:''}</td>`}).join('')}
             <td style="padding:4px;border:1px solid #e2eaf2;text-align:center;background:#fadbd8;color:#c0392b;font-weight:bold">${r.grand_total||''}</td>
           </tr>`
