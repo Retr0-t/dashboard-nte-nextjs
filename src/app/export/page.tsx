@@ -27,12 +27,12 @@ export default function ExportPage() {
         return
       }
      const d = {
-       rows,
-       wh_so: cfg.warehouses,
-       owner: cfg.owner,
-       area: cfg.witel,
-       tanggal,
-     }
+  rows,
+  warehouses: cfg.warehouses,
+  owner: cfg.owner,
+  area: cfg.witel,
+  tanggal,
+}
       if (fmt === 'pdf') await generatePDF(d)
       else               await generateJPG(d)
       toast.success(`✅ ${cfg.operator} ${cfg.witel} berhasil di-export!`)
