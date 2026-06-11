@@ -64,15 +64,18 @@ export default function ExportPage() {
 
   const handleExportAll = async (fmt: 'pdf' | 'jpg') => {
     const keys = Object.keys(AREA_CONFIG)
-    toast.loading(Mengexport ${keys.length} laporan..., { id: 'exp-all' })
+   toast.loading(`Mengexport ${keys.length} laporan...`, {
+  id: 'exp-all'
+})
     let done = 0
     for (const ak of keys) {
       await handleExport(ak, fmt)
       done++
       await new Promise(r => setTimeout(r, 500))
     }
-    toast.success(Selesai! ${done} laporan di-export., { id: 'exp-all' })
-  }
+    toast.success(`Selesai! ${done} laporan di-export.`, {
+  id: 'exp-all'
+})
 
   const lastUpdated = stats?.lastUpdated
     ? formatDistanceToNow(new Date(stats.lastUpdated), { addSuffix: true, locale: id })
@@ -137,8 +140,8 @@ export default function ExportPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {opKeys.map(ak => {
                 const cfg       = AREA_CONFIG[ak]
-                const isPdfLoad = exporting === ${ak}-pdf
-                const isJpgLoad = exporting === ${ak}-jpg
+                const isPdfLoad = exporting === `${ak}-pdf`
+                const isJpgLoad = exporting === `${ak}-jpg`
                 const isBusy    = exporting !== null
 
                 return (
