@@ -37,9 +37,9 @@ export async function generatePDF(data: ExportData): Promise<void> {
   // Table
   let prevJenis = ''
   const body = rows.map(r => {
-    const j = r.jenis_nte !== prevJenis ? r.jenis_nte : ''
-    prevJenis = r.jenis_nte
-    return [j, r.status_nte, r.type_nte.replace(/_/g,' '),
+    const j = r.jenis_2 !== prevJenis ? r.jenis_2 : ''
+    prevJenis = r.jenis_2
+    return [j, r.status_2, r.type.replace(/_/g,' '),
       ...warehouses.map(wh => ((r[wh]||0)>0 ? String(r[wh]) : '')),
       r.grand_total>0 ? String(r.grand_total) : '']
   })
@@ -119,10 +119,10 @@ export async function generateJPG(data: ExportData): Promise<void> {
       </thead>
       <tbody>
         ${rows.map((r,i)=>{
-          const jenis = r.jenis_nte!==prev ? r.jenis_nte : ''; prev=r.jenis_nte
+          const jenis = r.jenis_2!==prev ? r.jenis_2 : ''; prev=r.jenis_2
           const bg = i%2===0?'#fff':'#f8fafc'
-          const sBg  = r.status_nte==='NTE BARU'?'#d5f5e3':'#fff3cd'
-          const sTxt = r.status_nte==='NTE BARU'?'#1e8449':'#856404'
+          const sBg  = r.status==='NTE BARU'?'#d5f5e3':'#fff3cd'
+          const sTxt = r.status==='NTE BARU'?'#1e8449':'#856404'
           return `<tr style="background:${bg}">
             <td style="padding:4px 8px;border:1px solid #e2eaf2;font-weight:${jenis?'bold':'normal'};color:#1e3a5f;background:${jenis?'#ebf2fa':bg}">${jenis}</td>
             <td style="padding:4px;border:1px solid #e2eaf2;text-align:center">
