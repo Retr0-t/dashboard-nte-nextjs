@@ -62,14 +62,27 @@ function LaporanContent() {
   const totalTypes  = Array.from(new Set(rows.map(r => r.type))).length
   const whsWithData = whs.filter(wh => rows.some(r => ((r[wh] as number) || 0) > 0))
 
-  const heat = (val: number, max: number) => {
-    if (!heatmap || val === 0) return ''
-    const r = max > 0 ? val / max : 0
-    if (r > 0.8) return 'bg-emerald-100 text-emerald-800 font-semibold'
-    if (r > 0.5) return 'bg-green-50 text-green-700'
-    if (r > 0.2) return 'bg-amber-50 text-amber-700'
-    return 'bg-red-50 text-red-600'
+  const heat = (val: number) => {
+  if (!heatmap || val === 0) return ''
+
+  if (val >= 100) {
+    return 'bg-emerald-100 text-emerald-800 font-bold'
   }
+
+  if (val >= 60) {
+    return 'bg-green-100 text-green-800 font-semibold'
+  }
+
+  if (val >= 20) {
+    return 'bg-orange-100 text-orange-800 font-semibold'
+  }
+
+  if (val >= 10) {
+    return 'bg-yellow-100 text-yellow-800 font-semibold'
+  }
+
+  return 'bg-red-100 text-red-700 font-semibold'
+}
 
   const handleExport = async (fmt: 'pdf'|'jpg') => {
     if (!rows.length) { toast.error('Tidak ada data'); return }
@@ -290,7 +303,7 @@ function LaporanContent() {
                           const val = (row[wh] as number) || 0
                           return (
                             <td key={wh}
-                              className={`text-xs ${val > 0 ? heat(val, maxVal) : 'text-slate-200'}`}>
+                              className={`text-xs ${val > 0 ? heat(val) : 'text-slate-200'}`}>
                               {val > 0 ? val.toLocaleString('id') : ''}
                             </td>
                           )
