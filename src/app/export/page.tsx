@@ -62,6 +62,7 @@ export default function ExportPage() {
   }
 }
 
+
   const handleExportAll = async (fmt: 'pdf' | 'jpg') => {
     const keys = Object.keys(AREA_CONFIG)
    toast.loading(`Mengexport ${keys.length} laporan...`, {
@@ -76,6 +77,7 @@ export default function ExportPage() {
     toast.success(`Selesai! ${done} laporan di-export.`, {
   id: 'exp-all'
 })
+}
 
   const lastUpdated = stats?.lastUpdated
     ? formatDistanceToNow(new Date(stats.lastUpdated), { addSuffix: true, locale: id })
