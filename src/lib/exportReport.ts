@@ -5,7 +5,7 @@ import { shortWH, OP_COLORS } from './masterData'
 export interface ExportData {
   rows:       any[]
   warehouses: string[]
-  operator:   string
+  owner:   string
   area:       string
   tanggal:    string
 }
@@ -19,7 +19,7 @@ const OP_RGB: Record<string, [number,number,number]> = {
 export async function generatePDF(data: ExportData): Promise<void> {
   const jsPDF     = (await import('jspdf')).default
   const autoTable = (await import('jspdf-autotable')).default
-  const { rows, warehouses, operator, area, tanggal } = data
+  const { rows, warehouses, owner, area, tanggal } = data
   const rgb     = OP_RGB[operator] || [30, 58, 95]
   const shortWHs = warehouses.map(shortWH)
   const doc     = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' })
@@ -37,9 +37,9 @@ export async function generatePDF(data: ExportData): Promise<void> {
   // Table
   let prevJenis = ''
   const body = rows.map(r => {
-    const j = r.jenis_nte !== prevJenis ? r.jenis_nte : ''
-    prevJenis = r.jenis_nte
-    return [j, r.status_nte, r.type_nte.replace(/_/g,' '),
+    const j = r.jenis_2 !== prevJenis ? r.jenis_2 : ''
+    prevJenis = r.jenis_2
+    return [j, r.status, r.type.replace(/_/g,' '),
       ...warehouses.map(wh => ((r[wh]||0)>0 ? String(r[wh]) : '')),
       r.grand_total>0 ? String(r.grand_total) : '']
   })
@@ -84,7 +84,7 @@ export async function generatePDF(data: ExportData): Promise<void> {
   })
 
   doc.setFontSize(7); doc.setTextColor(150,150,150)
-  doc.text(`NTE Operations · Telkom Indonesia · ${operator} ${area} · ${tanggal}`, pageW/2, pageH-5, {align:'center'})
+  doc.text(`NTE Operations · Telkom Akses · ${operator} ${area} · ${tanggal}`, pageW/2, pageH-5, {align:'center'})
   doc.save(`STOCK_NTE_${operator}_${area}_${tanggal}.pdf`)
 }
 
