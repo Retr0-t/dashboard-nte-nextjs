@@ -26,13 +26,13 @@ export default function ExportPage() {
         toast.error(`Tidak ada data untuk ${cfg.operator} ${cfg.witel}`)
         return
       }
-      const d = {
-        rows,
-        warehouses: cfg.warehouses,
-        operator:   cfg.operator,
-        area:       cfg.witel,
-        tanggal,
-      }
+     const d = {
+       rows,
+       wh_so: cfg.warehouses,
+       owner: cfg.owner,
+       area: cfg.witel,
+       tanggal,
+     }
       if (fmt === 'pdf') await generatePDF(d)
       else               await generateJPG(d)
       toast.success(`✅ ${cfg.operator} ${cfg.witel} berhasil di-export!`)
