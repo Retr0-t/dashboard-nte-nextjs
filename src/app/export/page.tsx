@@ -17,67 +17,41 @@ export default function ExportPage() {
   const tanggal = new Date().toISOString().split('T')[0]
 
   const handleExport = async (ak: string, fmt: 'pdf' | 'jpg') => {
-  const key = `${ak}-${fmt}`
-
-  setExporting(key)
-
-  try {
-    const cfg = AREA_CONFIG[ak]
-
-    const rows = await getLaporanHarian({
-      owner: cfg.owner,
-      wh_so: cfg.warehouses,
-    })
-
-    if (!rows.length) {
-      toast.error(`Tidak ada data untuk ${cfg.operator} ${cfg.witel}`)
-      return
-    }
-
-    const exportData = {
-      rows,
-      warehouses: cfg.warehouses,
-      owner: cfg.owner,
-      area: cfg.witel,
-      tanggal,
-    }
-
-    if (fmt === 'pdf') {
-      await generatePDF(exportData)
-    } else {
-      await generateJPG(exportData)
-    }
-
-    toast.success(
-      `✅ ${cfg.operator} ${cfg.witel} berhasil di-export!`
-    )
-  } catch (err: any) {
-    console.error(err)
-
-    toast.error(
-      err?.message || 'Gagal export laporan'
-    )
-  } finally {
-    setExporting(null)
+    const key = `${ak}-${fmt}`
+    setExporting(key)
+    try {
+      const cfg  = AREA_CONFIG[ak]
+      const rows = await getLaporanHarian({ owner: cfg.owner, wh_so: cfg.warehouses })
+      if (!rows.length) {
+        toast.error(`Tidak ada data untuk ${cfg.operator} ${cfg.witel}`)
+        return
+      }
+      const d = {
+        rows,
+        warehouses: cfg.warehouses,
+        operator:   cfg.operator,
+        area:       cfg.witel,
+        tanggal,
+      }
+      if (fmt === 'pdf') await generatePDF(d)
+      else               await generateJPG(d)
+      toast.success(`✅ ${cfg.operator} ${cfg.witel} berhasil di-export!`)
+    } catch (e: any) {
+      toast.error('Error: ' + e.message)
+    } finally { setExporting(null) }
   }
-}
-
 
   const handleExportAll = async (fmt: 'pdf' | 'jpg') => {
     const keys = Object.keys(AREA_CONFIG)
-   toast.loading(`Mengexport ${keys.length} laporan...`, {
-  id: 'exp-all'
-})
+    toast.loading(`Mengexport ${keys.length} laporan...`, { id: 'exp-all' })
     let done = 0
     for (const ak of keys) {
       await handleExport(ak, fmt)
       done++
       await new Promise(r => setTimeout(r, 500))
     }
-    toast.success(`Selesai! ${done} laporan di-export.`, {
-  id: 'exp-all'
-})
-}
+    toast.success(`Selesai! ${done} laporan di-export.`, { id: 'exp-all' })
+  }
 
   const lastUpdated = stats?.lastUpdated
     ? formatDistanceToNow(new Date(stats.lastUpdated), { addSuffix: true, locale: id })
